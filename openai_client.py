@@ -93,9 +93,15 @@ def interpret_command(user_input):
     # If no OpenAI client (e.g. missing API key), use simple rule-based fallback
     if not client:
         lower = user_input.lower()
+        if any(k in lower for k in ("schedule", "create", "add", "book")):
+            return {"action": "create_event"}
+        if any(k in lower for k in ("delete", "cancel", "remove")):
+            return {"action": "delete_event"}
+        if any(k in lower for k in ("move", "reschedule", "shift")):
+            return {"action": "move_event"}
         if "reminder" in lower:
             return {"action": "list_reminders_only"}
-        if "event" in lower or "schedule" in lower:
+        if "event" in lower:
             return {"action": "list_events_only"}
         if "today" in lower or "on" in lower:
             return {"action": "list_all"}
