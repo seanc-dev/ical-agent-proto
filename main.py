@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from openai_client import interpret_command
-from calendar_agent import (
+from calendar_agent_eventkit import (
     list_events_and_reminders,
     create_event,
     delete_event,
