@@ -81,7 +81,7 @@ def list_events_and_reminders(start_date=None, end_date=None):
                 set totalEvents to totalEvents + calEventCount
                 set debugOutput to debugOutput & "Calendar: " & (name of cal) & " has " & calEventCount & " total events\n"
                 
-                set theEvents to (every event of cal whose start date ≥ rangeStart and start date ≤ rangeEnd)
+                set theEvents to (every event of cal whose start date >= rangeStart and start date <= rangeEnd)
                 set filteredCount to count of theEvents
                 set debugOutput to debugOutput & "  Found " & filteredCount & " events in date range\n"
                 
@@ -89,7 +89,7 @@ def list_events_and_reminders(start_date=None, end_date=None):
                     set eventsOutput to eventsOutput & (summary of evt) & " | " & (start date of evt as string) & "\n"
                 end repeat
                 
-                set allDayEvents to (every event of cal whose all day event is true and start date ≥ rangeStart and start date ≤ rangeEnd)
+                set allDayEvents to (every event of cal whose all day event is true and start date >= rangeStart and start date <= rangeEnd)
                 set allDayCount to count of allDayEvents
                 set debugOutput to debugOutput & "  Found " & allDayCount & " all-day events\n"
                 
@@ -108,7 +108,7 @@ def list_events_and_reminders(start_date=None, end_date=None):
                 set totalReminders to totalReminders + reminderCount
                 set debugOutput to debugOutput & "Reminder list: " & (name of lst) & " has " & reminderCount & " total reminders\n"
                 
-                set theReminders to (every reminder of lst whose due date ≥ rangeStart and due date ≤ rangeEnd and completed is false)
+                set theReminders to (every reminder of lst whose due date >= rangeStart and due date <= rangeEnd and completed is false)
                 set filteredReminderCount to count of theReminders
                 set debugOutput to debugOutput & "  Found " & filteredReminderCount & " incomplete reminders in date range\n"
                 
@@ -116,7 +116,7 @@ def list_events_and_reminders(start_date=None, end_date=None):
                     set remindersOutput to remindersOutput & (name of rem) & " | " & (due date of rem as string) & "\n"
                 end repeat
                 
-                set allDayReminders to (every reminder of lst whose all day is true and due date ≥ rangeStart and due date ≤ rangeEnd and completed is false)
+                set allDayReminders to (every reminder of lst whose all day is true and due date >= rangeStart and due date <= rangeEnd and completed is false)
                 set allDayReminderCount to count of allDayReminders
                 set debugOutput to debugOutput & "  Found " & allDayReminderCount & " all-day incomplete reminders\n"
                 
