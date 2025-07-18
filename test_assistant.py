@@ -43,11 +43,30 @@ class CalendarAssistantTester:
 
     def test_interpret_command(self):
         test_cases = [
+            # List all
             ("what's on today?", "list_all"),
+            ("show me what's on my calendar today", "list_all"),
+            ("what's coming up today?", "list_all"),
+            # List events only
             ("show my events", "list_events_only"),
+            ("list my appointments for today", "list_events_only"),
+            ("what events do i have today?", "list_events_only"),
+            # List reminders only
             ("what are my reminders?", "list_reminders_only"),
+            ("list all reminders", "list_reminders_only"),
+            ("show my tasks", "list_reminders_only"),
+            # Create event
             ("schedule lunch tomorrow at 1pm", "create_event"),
+            ("add a dentist appointment on 2023-11-01 at 9:00", "create_event"),
+            ("book a meeting with Sarah next Monday at 14:00", "create_event"),
+            # Delete event
             ("delete my meeting tomorrow", "delete_event"),
+            ("cancel the dentist appointment for today", "delete_event"),
+            ("remove the lunch appointment", "delete_event"),
+            # Move event
+            ("reschedule my lunch from 1pm to 2pm", "move_event"),
+            ("move meeting to next Thursday at 10", "move_event"),
+            ("shift the call with Bob to Friday afternoon", "move_event"),
         ]
         for inp, expected in test_cases:
             res = interpret_command(inp)
