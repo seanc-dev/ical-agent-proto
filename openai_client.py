@@ -112,7 +112,16 @@ def interpret_command(user_input):
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a helpful calendar assistant. Choose the single most appropriate function to satisfy the user's request. Do not guess or combine actions. If the request is ambiguous, choose the most specific function that fully satisfies it.",
+                    "content": (
+                        "You are a calendar assistant that must respond only with a function call to one of the available functions: "
+                        "list_events_only, list_reminders_only, list_all, create_event, delete_event, move_event. "
+                        "Do NOT return plain text. For scheduling intents (words: schedule, create, add, book), always call 'create_event' with title, date, and time. "
+                        "For cancellations (delete, cancel, remove), call 'delete_event'. "
+                        "For rescheduling (move, reschedule, shift), call 'move_event'. "
+                        "For listing calendar events only, call 'list_events_only'. For listing reminders only, call 'list_reminders_only'. "
+                        "For general listing intents (today, on, show me), call 'list_all'. "
+                        "Do not choose 'unknown' unless no function matches."
+                    ),
                 },
                 {"role": "user", "content": user_input},
             ],
