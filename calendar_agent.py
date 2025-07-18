@@ -49,32 +49,29 @@ def list_events_and_reminders(start_date=None, end_date=None):
     if not end_date:
         end_date = start_date
 
-    sy, sm, sd = _date_parts(start_date)
-    ey, em, ed = _date_parts(end_date)
+    # Convert to AppleScript-friendly date strings like '18 July 2025 00:00:00'
+    def _as_applescript_date(date_obj):
+        return date_obj.strftime("%d %B %Y %H:%M:%S")
 
-    print(f"[DEBUG] Querying events from {start_date} to {end_date}")
-    print(f"[DEBUG] Date components: start({sy}, {sm}, {sd}) end({ey}, {em}, {ed})")
+    start_dt = datetime.strptime(start_date + " 00:00", "%Y-%m-%d %H:%M")
+    end_dt = datetime.strptime(end_date + " 23:59", "%Y-%m-%d %H:%M")
+
+    start_as = _as_applescript_date(start_dt)
+    end_as = _as_applescript_date(end_dt)
+
+    print(f"[DEBUG] Querying events from {start_as} to {end_as}")
 
     script = f"""
     try
         set eventsOutput to ""
         set remindersOutput to ""
+        set debugOutput to ""
         
-        -- Build rangeStart (00:00:00 of start_date)
-        set rangeStart to (current date)
-        set year of rangeStart to {sy}
-        set month of rangeStart to {sm}
-        set day of rangeStart to {sd}
-        set time of rangeStart to 0
+        -- Use date strings directly in an AppleScript-friendly format
+        set rangeStart to date "{start_as}"
+        set rangeEnd to date "{end_as}"
         
-        -- Build rangeEnd (23:59:59 of end_date)
-        set rangeEnd to (current date)
-        set year of rangeEnd to {ey}
-        set month of rangeEnd to {em}
-        set day of rangeEnd to {ed}
-        set time of rangeEnd to 86399 -- 23:59:59
-        
-        set debugOutput to "Date range: " & (rangeStart as string) & " to " & (rangeEnd as string) & "\n"
+        set debugOutput to debugOutput & "Date range: " & (rangeStart as string) & " to " & (rangeEnd as string) & "\n"
         
         tell application "Calendar"
             set totalEvents to 0
