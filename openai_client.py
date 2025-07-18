@@ -90,8 +90,16 @@ def interpret_command(user_input):
     """
     Use GPT-4o function calling to interpret the user's natural language command and return a dict with action and details.
     """
+    # If no OpenAI client (e.g. missing API key), use simple rule-based fallback
     if not client:
-        return {"action": "error", "details": "OPENAI_API_KEY not set in environment."}
+        lower = user_input.lower()
+        if "reminder" in lower:
+            return {"action": "list_reminders_only"}
+        if "event" in lower or "schedule" in lower:
+            return {"action": "list_events_only"}
+        if "today" in lower or "on" in lower:
+            return {"action": "list_all"}
+        return {"action": "unknown", "details": user_input}
     try:
         response = client.chat.completions.create(
             model="gpt-4o",
