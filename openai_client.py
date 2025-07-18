@@ -1,9 +1,12 @@
 """Wraps GPT-4o (OpenAI) calls for interpreting user commands in the terminal calendar assistant."""
 
+from dotenv import load_dotenv  # load .env file
 import os
 import openai
 import json
 
+# Load environment variables from .env
+load_dotenv()
 # Load API key from environment
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
@@ -99,7 +102,7 @@ def interpret_command(user_input):
                 },
                 {"role": "user", "content": user_input},
             ],
-            functions=calendar_functions,
+            functions=calendar_functions,  # type: ignore
             function_call="auto",
             temperature=0.0,
             max_tokens=256,
