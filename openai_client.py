@@ -113,14 +113,16 @@ def interpret_command(user_input):
                 {
                     "role": "system",
                     "content": (
-                        "You are a calendar assistant that must respond only with a function call to one of the available functions: "
-                        "list_events_only, list_reminders_only, list_all, create_event, delete_event, move_event. "
-                        "Do NOT return plain text. For scheduling intents (words: schedule, create, add, book), always call 'create_event' with title, date, and time. "
-                        "For cancellations (delete, cancel, remove), call 'delete_event'. "
-                        "For rescheduling (move, reschedule, shift), call 'move_event'. "
-                        "For listing calendar events only, call 'list_events_only'. For listing reminders only, call 'list_reminders_only'. "
-                        "For general listing intents (today, on, show me), call 'list_all'. "
-                        "Do not choose 'unknown' unless no function matches."
+                        "You are a calendar assistant. Respond only with a JSON function call to exactly one of the available functions: "
+                        "create_event, delete_event, move_event, list_reminders_only, list_events_only, list_all. "
+                        "Follow this precedence strictly: "
+                        "1) Scheduling verbs (schedule, create, add, book) → create_event. "
+                        "2) Cancellation verbs (delete, cancel, remove) → delete_event. "
+                        "3) Rescheduling verbs (move, reschedule, shift) → move_event. "
+                        "4) If the text contains 'reminder' → list_reminders_only. "
+                        "5) If the text contains 'event' or 'appointment' → list_events_only. "
+                        "6) General listing queries ('what's on', 'show me', 'what do I have', 'today', 'on') → list_all. "
+                        "Do not return any other text. If no rule matches, return action 'unknown'."
                     ),
                 },
                 {"role": "user", "content": user_input},
