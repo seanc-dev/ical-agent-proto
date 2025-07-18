@@ -134,6 +134,20 @@ def interpret_command(user_input):
                 arguments = message.function_call.arguments or {}
             return {"action": func_name, "details": arguments}
         else:
+            # Fallback mapping when function calling returns no selection
+            lower = user_input.lower()
+            if any(k in lower for k in ("schedule", "create", "add", "book")):
+                return {"action": "create_event", "details": {}}
+            if any(k in lower for k in ("delete", "cancel", "remove")):
+                return {"action": "delete_event", "details": {}}
+            if any(k in lower for k in ("move", "reschedule", "shift")):
+                return {"action": "move_event", "details": {}}
+            if "reminder" in lower:
+                return {"action": "list_reminders_only", "details": {}}
+            if "event" in lower:
+                return {"action": "list_events_only", "details": {}}
+            if "today" in lower or "on" in lower:
+                return {"action": "list_all", "details": {}}
             return {"action": "unknown", "details": user_input}
     except Exception as e:
         return {"action": "error", "details": str(e)}
