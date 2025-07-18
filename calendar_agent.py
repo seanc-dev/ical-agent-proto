@@ -52,6 +52,9 @@ def list_events_and_reminders(start_date=None, end_date=None):
     sy, sm, sd = _date_parts(start_date)
     ey, em, ed = _date_parts(end_date)
 
+    print(f"[DEBUG] Querying events from {start_date} to {end_date}")
+    print(f"[DEBUG] Date components: start({sy}, {sm}, {sd}) end({ey}, {em}, {ed})")
+
     script = f"""
     try
         set eventsOutput to ""
@@ -71,35 +74,63 @@ def list_events_and_reminders(start_date=None, end_date=None):
         set day of rangeEnd to {ed}
         set time of rangeEnd to 86399 -- 23:59:59
         
+        set debugOutput to "Date range: " & (rangeStart as string) & " to " & (rangeEnd as string) & "\n"
+        
         tell application "Calendar"
+            set totalEvents to 0
             repeat with cal in calendars
+                set allCalEvents to (every event of cal)
+                set calEventCount to count of allCalEvents
+                set totalEvents to totalEvents + calEventCount
+                set debugOutput to debugOutput & "Calendar: " & (name of cal) & " has " & calEventCount & " total events\n"
+                
                 set theEvents to (every event of cal whose start date ≥ rangeStart and start date ≤ rangeEnd)
+                set filteredCount to count of theEvents
+                set debugOutput to debugOutput & "  Found " & filteredCount & " events in date range\n"
+                
                 repeat with evt in theEvents
                     set eventsOutput to eventsOutput & (summary of evt) & " | " & (start date of evt as string) & "\n"
                 end repeat
                 
                 set allDayEvents to (every event of cal whose all day event is true and start date ≥ rangeStart and start date ≤ rangeEnd)
+                set allDayCount to count of allDayEvents
+                set debugOutput to debugOutput & "  Found " & allDayCount & " all-day events\n"
+                
                 repeat with evt in allDayEvents
                     set eventsOutput to eventsOutput & (summary of evt) & " | All Day\n"
                 end repeat
             end repeat
+            set debugOutput to debugOutput & "Total events across all calendars: " & totalEvents & "\n"
         end tell
         
         tell application "Reminders"
+            set totalReminders to 0
             repeat with lst in lists
+                set allReminders to (every reminder of lst)
+                set reminderCount to count of allReminders
+                set totalReminders to totalReminders + reminderCount
+                set debugOutput to debugOutput & "Reminder list: " & (name of lst) & " has " & reminderCount & " total reminders\n"
+                
                 set theReminders to (every reminder of lst whose due date ≥ rangeStart and due date ≤ rangeEnd and completed is false)
+                set filteredReminderCount to count of theReminders
+                set debugOutput to debugOutput & "  Found " & filteredReminderCount & " incomplete reminders in date range\n"
+                
                 repeat with rem in theReminders
                     set remindersOutput to remindersOutput & (name of rem) & " | " & (due date of rem as string) & "\n"
                 end repeat
                 
                 set allDayReminders to (every reminder of lst whose all day is true and due date ≥ rangeStart and due date ≤ rangeEnd and completed is false)
+                set allDayReminderCount to count of allDayReminders
+                set debugOutput to debugOutput & "  Found " & allDayReminderCount & " all-day incomplete reminders\n"
+                
                 repeat with rem in allDayReminders
                     set remindersOutput to remindersOutput & (name of rem) & " | All Day\n"
                 end repeat
             end repeat
+            set debugOutput to debugOutput & "Total reminders across all lists: " & totalReminders & "\n"
         end tell
         
-        return "EVENTS:" & eventsOutput & "REMINDERS:" & remindersOutput
+        return "DEBUG:" & debugOutput & "EVENTS:" & eventsOutput & "REMINDERS:" & remindersOutput
     on error errMsg
         return "ERROR:" & errMsg
     end try
@@ -111,9 +142,18 @@ def list_events_and_reminders(start_date=None, end_date=None):
         )
         output = result.stdout.strip()
 
+        if result.stderr:
+            print("[DEBUG] AppleScript stderr:", result.stderr.strip())
+
         if output.startswith("ERROR:"):
             error_msg = output.replace("ERROR:", "").strip()
+            print("[DEBUG] AppleScript error:", error_msg)
             return {"events": [f"AppleScript error: {error_msg}"], "reminders": []}
+
+        if "DEBUG:" in output:
+            debug_part = output.split("DEBUG:")[1].split("EVENTS:")[0]
+            print("[DEBUG] AppleScript debug output:")
+            print(debug_part)
 
         if output and "EVENTS:" in output:
             parts = output.split("EVENTS:")
