@@ -93,13 +93,13 @@ def interpret_command(user_input):
     # If no OpenAI client (e.g. missing API key), use simple rule-based fallback
     if not client:
         lower = user_input.lower()
-        if any(k in lower for k in ("schedule", "create", "add", "book")):
-            return {"action": "create_event"}
         if any(k in lower for k in ("delete", "cancel", "remove")):
             return {"action": "delete_event"}
         if any(k in lower for k in ("move", "reschedule", "shift")):
             return {"action": "move_event"}
-        if "reminder" in lower:
+        if any(k in lower for k in ("schedule", "create", "add", "book")):
+            return {"action": "create_event"}
+        if "reminder" in lower or "task" in lower:
             return {"action": "list_reminders_only"}
         if "event" in lower:
             return {"action": "list_events_only"}
@@ -116,10 +116,10 @@ def interpret_command(user_input):
                         "You are a calendar assistant. Respond only with a JSON function call to exactly one of the available functions: "
                         "create_event, delete_event, move_event, list_reminders_only, list_events_only, list_all. "
                         "Follow this precedence strictly: "
-                        "1) Scheduling verbs (schedule, create, add, book) → create_event. "
-                        "2) Cancellation verbs (delete, cancel, remove) → delete_event. "
-                        "3) Rescheduling verbs (move, reschedule, shift) → move_event. "
-                        "4) If the text contains 'reminder' → list_reminders_only. "
+                        "1) Cancellation verbs (delete, cancel, remove) → delete_event. "
+                        "2) Rescheduling verbs (move, reschedule, shift) → move_event. "
+                        "3) Scheduling verbs (schedule, create, add, book) → create_event. "
+                        "4) If the text contains 'reminder' or 'task' → list_reminders_only. "
                         "5) If the text contains 'event' or 'appointment' → list_events_only. "
                         "6) General listing queries ('what's on', 'show me', 'what do I have', 'today', 'on') → list_all. "
                         "Do not return any other text. If no rule matches, return action 'unknown'."
@@ -147,13 +147,13 @@ def interpret_command(user_input):
         else:
             # Fallback mapping when function calling returns no selection
             lower = user_input.lower()
-            if any(k in lower for k in ("schedule", "create", "add", "book")):
-                return {"action": "create_event", "details": {}}
             if any(k in lower for k in ("delete", "cancel", "remove")):
                 return {"action": "delete_event", "details": {}}
             if any(k in lower for k in ("move", "reschedule", "shift")):
                 return {"action": "move_event", "details": {}}
-            if "reminder" in lower:
+            if any(k in lower for k in ("schedule", "create", "add", "book")):
+                return {"action": "create_event", "details": {}}
+            if "reminder" in lower or "task" in lower:
                 return {"action": "list_reminders_only", "details": {}}
             if "event" in lower:
                 return {"action": "list_events_only", "details": {}}
