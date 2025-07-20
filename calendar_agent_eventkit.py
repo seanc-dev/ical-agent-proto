@@ -82,9 +82,9 @@ class EventKitAgent:
         try:
             start_dt = datetime.strptime(f"{start_date} 00:00", "%Y-%m-%d %H:%M")
             end_dt = datetime.strptime(f"{end_date} 23:59", "%Y-%m-%d %H:%M")
-        except Exception:
+        except Exception as e:
             # Invalid date format
-            return {"events": [], "reminders": []}
+            return {"events": [], "reminders": [], "error": f"Invalid date format: {e}"}
         # Convert to NSDate
         start_ns = NSDate.dateWithTimeIntervalSince1970_(
             time.mktime(start_dt.timetuple())
@@ -103,6 +103,8 @@ class EventKitAgent:
 
     def create_event(self, details):
         """Stub for event creation via EventKit."""
+        if "duration" not in details:
+            return {"success": False, "error": "Missing duration"}
         return {"success": False, "error": "Not implemented"}
 
     def delete_event(self, details):

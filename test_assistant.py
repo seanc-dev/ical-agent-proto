@@ -102,6 +102,21 @@ class CalendarAssistantTester:
             return True
         return False
 
+    def test_duration_detection(self):
+        print("Testing duration detection...")
+        details = {
+            "title": "Test",
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "time": "12:00",
+        }
+        res = create_event(details)
+        print(f"  Result: {res}")
+        if res.get("error") != "Missing duration":
+            print("    ❌ Expected 'Missing duration' error")
+            return False
+        print("    ✅ Detected missing duration correctly")
+        return True
+
     def test_date_parsing(self):
         print("Testing date parsing edge cases...")
         for d in [None, "2024-07-18", "2024-12-31"]:
@@ -114,12 +129,12 @@ class CalendarAssistantTester:
     def test_error_handling(self):
         print("Testing error handling...")
         # Invalid date
-        try:
-            list_events_and_reminders("invalid", "invalid")
-            print("  ✅ Handled invalid dates gracefully")
-        except:
-            print("  ❌ Crash on invalid dates")
+        res = list_events_and_reminders("invalid", "invalid")
+        print(f"  Result on invalid dates: {res}")
+        if "error" not in res:
+            print("    ❌ Expected 'error' key for invalid dates")
             return False
+        print("    ✅ Handled invalid dates with error key")
         # Missing create details
         res = create_event({})
         print(f"  Create missing data result: {res}")
@@ -142,6 +157,7 @@ class CalendarAssistantTester:
         self.run_test("ListEvents", self.test_list_events)
         self.run_test("CreateEvent", self.test_create_event)
         self.run_test("DateParsing", self.test_date_parsing)
+        self.run_test("DurationDetection", self.test_duration_detection)
         self.run_test("ErrorHandling", self.test_error_handling)
         self.print_summary()
 
