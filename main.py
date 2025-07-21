@@ -60,6 +60,17 @@ if __name__ == "__main__":
                     print(f"  - {reminder}")
 
         elif action == "create_event":
+            # Prompt for duration if not provided
+            if "duration" not in details or details.get("duration") is None:
+                resp = input("Duration not specified. Is one hour enough? (enter minutes or press Enter for 60): ")
+                if resp.strip():
+                    try:
+                        details["duration"] = int(resp.strip())
+                    except ValueError:
+                        print("Invalid duration; defaulting to 60 minutes.")
+                        details["duration"] = 60
+                else:
+                    details["duration"] = 60
             result = create_event(details)
             if result.get("success"):
                 print(f"✅ {result.get('message')}")
