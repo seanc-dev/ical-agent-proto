@@ -44,6 +44,8 @@ calendar_functions = [
                 "title": {"type": "string", "description": "Event title"},
                 "date": {"type": "string", "description": "Event date (YYYY-MM-DD)"},
                 "time": {"type": "string", "description": "Event time (e.g., 14:00)"},
+                "duration": {"type": "integer", "description": "Duration in minutes"},
+                "location": {"type": "string", "description": "Event location"},
             },
             "required": ["title", "date", "time"],
         },

@@ -178,14 +178,24 @@ def create_event(details):
     title = details.get("title", "Untitled Event")
     date_str = details.get("date")
     time_str = details.get("time", "09:00")
-    duration = details.get("duration", 60)  # Default 1 hour in minutes
+    location = details.get("location")
+
+    warning = None
+    duration = details.get("duration")
+    if duration is None:
+        duration = 60
+        warning = "Duration not specified; defaulting to 60 minutes"
 
     if not date_str:
         return {"success": False, "error": "Date is required"}
 
     try:
         # Parse date and time
-        start_datetime = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
+        try:
+            start_datetime = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
+        except ValueError:
+            return {"success": False, "error": "Invalid date or time format"}
+
         end_datetime = start_datetime + timedelta(minutes=duration)
 
         print(f"[DEBUG] Creating event: {title}")
@@ -194,19 +204,20 @@ def create_event(details):
         print(f"[DEBUG] Duration: {duration} minutes")
 
         # Use a simpler approach with date arithmetic
+        location_line = f'                set location of newEvent to "{location}"\n' if location else ""
         script = f"""
         try
             tell application "Calendar"
                 set newEvent to make new event at end of events of calendar 1
                 set summary of newEvent to "{title}"
-                
+
                 -- Set start date using date string
                 set start date of newEvent to date "{start_datetime.strftime('%Y-%m-%d %H:%M:%S')}"
-                
+
                 -- Set end date using date arithmetic ({duration} * minutes)
                 set end date of newEvent to (start date of newEvent) + {duration} * minutes
-                
-                return "SUCCESS: Event created"
+
+{location_line}                return "SUCCESS: Event created"
             end tell
         on error errMsg
             return "ERROR:" & errMsg
@@ -225,7 +236,10 @@ def create_event(details):
             print(f"[DEBUG] AppleScript stderr: {result.stderr.strip()}")
 
         if "SUCCESS" in result.stdout:
-            return {"success": True, "message": "Event created successfully"}
+            response = {"success": True, "message": "Event created successfully"}
+            if warning:
+                response["warning"] = warning
+            return response
         else:
             error_msg = result.stdout.replace("ERROR:", "").strip()
             return {"success": False, "error": error_msg}
