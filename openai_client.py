@@ -1,14 +1,17 @@
 """Wraps GPT-4o (OpenAI) calls for interpreting user commands in the terminal calendar assistant."""
 
 import os
-import openai
+try:
+    import openai
+except Exception:  # pragma: no cover - optional dependency
+    openai = None
 import json
 
 # Load API key from environment
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # Create OpenAI client (for SDK v1.x)
-client = openai.OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
+client = openai.OpenAI(api_key=OPENAI_API_KEY) if openai and OPENAI_API_KEY else None
 
 # Define available functions for function calling
 calendar_functions = [
