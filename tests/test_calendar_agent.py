@@ -80,4 +80,21 @@ def test_create_event_includes_location(monkeypatch):
 def test_create_event_invalid_date(monkeypatch):
     result = calendar_agent.create_event({"title": "Bad", "date": "2024-13-01", "time": "10:00"})
     assert not result["success"]
-    assert "Invalid date or time format" in result["error"]
+    assert "Date must be in YYYY-MM-DD format" in result["error"]
+
+
+def test_create_event_invalid_time(monkeypatch):
+    result = calendar_agent.create_event({"title": "Bad", "date": "2024-08-01", "time": "25:00"})
+    assert not result["success"]
+    assert "Time must be in HH:MM 24-hour format" in result["error"]
+
+
+def test_move_event_invalid_time(monkeypatch):
+    result = calendar_agent.move_event({
+        "title": "Meet",
+        "old_date": "2024-08-01",
+        "new_date": "2024-08-02",
+        "new_time": "99:99",
+    })
+    assert not result["success"]
+    assert "Time must be in HH:MM 24-hour format" in result["error"]
