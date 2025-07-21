@@ -41,3 +41,13 @@ def test_interpret_command_success(monkeypatch):
     monkeypatch.setattr(openai_client, "client", fake_client)
     result = openai_client.interpret_command("show events")
     assert result == {"action": "list_all", "details": {}}
+
+
+def test_interpret_command_add_notification(monkeypatch):
+    message = FakeMessage("add_notification", '{"title":"Meet","date":"2024-08-01"}')
+    response = FakeResponse(message)
+    fake_client = FakeClient(response)
+    monkeypatch.setattr(openai_client, "client", fake_client)
+    result = openai_client.interpret_command("remind me")
+    assert result["action"] == "add_notification"
+    assert result["details"]["title"] == "Meet"
