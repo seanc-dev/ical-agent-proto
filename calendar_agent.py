@@ -243,8 +243,8 @@ def delete_event(details):
         return {"success": False, "error": "Title and date are required"}
 
     try:
-        event_date = datetime.strptime(date_str, "%Y-%m-%d")
-        sy, sm, sd = _date_parts(date_str)
+        # Validate date format
+        datetime.strptime(date_str, "%Y-%m-%d")
 
         script = f"""
         try
