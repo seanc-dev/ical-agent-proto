@@ -51,3 +51,22 @@ def test_interpret_command_add_notification(monkeypatch):
     result = openai_client.interpret_command("remind me")
     assert result["action"] == "add_notification"
     assert result["details"]["title"] == "Meet"
+
+def test_interpret_command_unknown(monkeypatch):
+    message = types.SimpleNamespace(function_call=None)
+    response = FakeResponse(message)
+    fake_client = FakeClient(response)
+    monkeypatch.setattr(openai_client, "client", fake_client)
+    result = openai_client.interpret_command("hello")
+    assert result == {"action": "unknown", "details": "hello"}
+
+
+def test_interpret_command_exception(monkeypatch):
+    class ErrorCompletions:
+        def create(self, *args, **kwargs):
+            raise RuntimeError("boom")
+    fake_client = types.SimpleNamespace(chat=types.SimpleNamespace(completions=ErrorCompletions()))
+    monkeypatch.setattr(openai_client, "client", fake_client)
+    result = openai_client.interpret_command("hi")
+    assert result["action"] == "error"
+    assert "boom" in result["details"]
