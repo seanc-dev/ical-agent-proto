@@ -5,8 +5,8 @@
 ### Event Creation
 
 - ✅ **Fixed**: End date not being set properly (now defaults to 1 hour duration)
-- 🔄 **In Progress**: LLM should ask for duration if not specified ("Is one hour enough?")
-- 🔄 **In Progress**: Better error handling for date/time parsing
+- ✅ **Completed**: LLM now prompts for duration if not specified
+- ✅ **Completed**: Better error handling for date/time parsing
 
 ## Planned Features (v2)
 
