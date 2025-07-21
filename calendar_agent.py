@@ -203,7 +203,7 @@ def create_event(details):
                 -- Set start date using date string
                 set start date of newEvent to date "{start_datetime.strftime('%Y-%m-%d %H:%M:%S')}"
                 
-                -- Set end date using date arithmetic (start + 1 hour)
+                -- Set end date using date arithmetic ({duration} * minutes)
                 set end date of newEvent to (start date of newEvent) + {duration} * minutes
                 
                 return "SUCCESS: Event created"
