@@ -43,3 +43,41 @@ def test_list_events_and_reminders(monkeypatch):
     result = calendar_agent.list_events_and_reminders("2024-01-01", "2024-01-01")
     assert any("event1" in e for e in result["events"])
     assert any("rem1" in r for r in result["reminders"])
+
+
+def test_create_event_default_duration_warning(monkeypatch):
+    captured = {}
+
+    def fake_run(cmd, capture_output=True, text=True, check=False):
+        captured["script"] = cmd[2]
+        return types.SimpleNamespace(stdout="SUCCESS: Event created", stderr="")
+
+    monkeypatch.setattr(calendar_agent.subprocess, "run", fake_run)
+    result = calendar_agent.create_event({"title": "Test", "date": "2024-08-01", "time": "10:00"})
+    assert result["success"]
+    assert "warning" in result and "defaulting to 60 minutes" in result["warning"]
+
+
+def test_create_event_includes_location(monkeypatch):
+    captured = {}
+
+    def fake_run(cmd, capture_output=True, text=True, check=False):
+        captured["script"] = cmd[2]
+        return types.SimpleNamespace(stdout="SUCCESS: Event created", stderr="")
+
+    monkeypatch.setattr(calendar_agent.subprocess, "run", fake_run)
+    result = calendar_agent.create_event({
+        "title": "Meeting",
+        "date": "2024-08-01",
+        "time": "10:00",
+        "duration": 30,
+        "location": "Office",
+    })
+    assert result["success"]
+    assert "set location of newEvent to \"Office\"" in captured["script"]
+
+
+def test_create_event_invalid_date(monkeypatch):
+    result = calendar_agent.create_event({"title": "Bad", "date": "2024-13-01", "time": "10:00"})
+    assert not result["success"]
+    assert "Invalid date or time format" in result["error"]
