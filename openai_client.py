@@ -2,7 +2,10 @@
 
 from dotenv import load_dotenv  # load .env file
 import os
-import openai
+try:
+    import openai
+except Exception:  # pragma: no cover - optional dependency
+    openai = None
 import json
 
 # Load environment variables from .env
@@ -11,7 +14,7 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # Create OpenAI client (for SDK v1.x)
-client = openai.OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
+client = openai.OpenAI(api_key=OPENAI_API_KEY) if openai and OPENAI_API_KEY else None
 
 # Define available functions for function calling
 calendar_functions = [
