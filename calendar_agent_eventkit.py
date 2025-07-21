@@ -1,7 +1,7 @@
 """Handles Calendar integration using EventKit for the terminal calendar assistant."""
 
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 
 try:
     from Foundation import NSDate, NSRunLoop  # type: ignore
