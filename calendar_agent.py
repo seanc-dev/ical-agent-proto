@@ -359,3 +359,50 @@ def move_event(details):
 
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+
+def add_notification(details):
+    """Add a display alarm to an existing event."""
+    title = details.get("title")
+    date_str = details.get("date")
+    minutes_before = details.get("minutes_before", 15)
+
+    if not title or not date_str:
+        return {"success": False, "error": "Title and date are required"}
+
+    try:
+        try:
+            _validate_date(date_str)
+        except ValueError as e:
+            return {"success": False, "error": str(e)}
+
+        script = f"""
+        try
+            tell application \"Calendar\"
+                repeat with cal in calendars
+                    set targetEvents to (every event of cal whose summary is \"{title}\" and start date ≥ date \"{date_str} 00:00\" and start date < date \"{date_str} 23:59\")
+                    repeat with evt in targetEvents
+                        make new display alarm at end of display alarms of evt with properties {{trigger interval:-{minutes_before} * minutes}}
+                    end repeat
+                end repeat
+                return \"SUCCESS: Notification added\"
+            end tell
+        on error errMsg
+            return \"ERROR:\" & errMsg
+        end try
+        """
+
+        result = subprocess.run([
+            "osascript",
+            "-e",
+            script,
+        ], capture_output=True, text=True, check=False)
+
+        if "SUCCESS" in result.stdout:
+            return {"success": True, "message": "Notification added"}
+        else:
+            error_msg = result.stdout.replace("ERROR:", "").strip()
+            return {"success": False, "error": error_msg}
+
+    except Exception as e:
+        return {"success": False, "error": str(e)}

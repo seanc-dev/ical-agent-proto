@@ -88,6 +88,19 @@ calendar_functions = [
             "required": ["title", "old_date", "new_date", "new_time"],
         },
     },
+    {
+        "name": "add_notification",
+        "description": "Add a notification reminder to an existing event.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "title": {"type": "string", "description": "Event title"},
+                "date": {"type": "string", "description": "Event date (YYYY-MM-DD)"},
+                "minutes_before": {"type": "integer", "description": "Minutes before event to trigger"},
+            },
+            "required": ["title", "date"],
+        },
+    },
 ]
 
 

@@ -12,6 +12,7 @@ from calendar_agent_eventkit import (
     create_event,
     delete_event,
     move_event,
+    add_notification,
 )
 
 # Main terminal loop
@@ -89,6 +90,13 @@ if __name__ == "__main__":
 
         elif action == "move_event":
             result = move_event(details)
+            if result.get("success"):
+                print(f"✅ {result.get('message')}")
+            else:
+                print(f"❌ Error: {result.get('error')}")
+
+        elif action == "add_notification":
+            result = add_notification(details)
             if result.get("success"):
                 print(f"✅ {result.get('message')}")
             else:

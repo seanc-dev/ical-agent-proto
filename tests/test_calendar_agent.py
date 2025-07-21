@@ -98,3 +98,26 @@ def test_move_event_invalid_time(monkeypatch):
     })
     assert not result["success"]
     assert "Time must be in HH:MM 24-hour format" in result["error"]
+
+
+def test_add_notification_builds_script(monkeypatch):
+    captured = {}
+
+    def fake_run(cmd, capture_output=True, text=True, check=False):
+        captured["script"] = cmd[2]
+        return types.SimpleNamespace(stdout="SUCCESS: Notification added", stderr="")
+
+    monkeypatch.setattr(calendar_agent.subprocess, "run", fake_run)
+    result = calendar_agent.add_notification({
+        "title": "Meet",
+        "date": "2024-08-01",
+        "minutes_before": 30,
+    })
+    assert result["success"]
+    assert "display alarm" in captured["script"] and "30" in captured["script"]
+
+
+def test_add_notification_invalid_date(monkeypatch):
+    result = calendar_agent.add_notification({"title": "t", "date": "2024-13-01"})
+    assert not result["success"]
+    assert "Date must be in YYYY-MM-DD format" in result["error"]
