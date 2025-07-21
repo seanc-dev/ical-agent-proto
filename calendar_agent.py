@@ -4,9 +4,25 @@ import subprocess
 from datetime import datetime, timedelta
 
 
+def _validate_date(date_str):
+    """Validate YYYY-MM-DD date string and return datetime.date."""
+    try:
+        return datetime.strptime(date_str, "%Y-%m-%d").date()
+    except Exception as e:
+        raise ValueError("Date must be in YYYY-MM-DD format") from e
+
+
+def _validate_time(time_str):
+    """Validate HH:MM 24-hour time string and return datetime.time."""
+    try:
+        return datetime.strptime(time_str, "%H:%M").time()
+    except Exception as e:
+        raise ValueError("Time must be in HH:MM 24-hour format") from e
+
+
 def _date_parts(date_str):
     """Return (year, month, day) tuple from YYYY-MM-DD string."""
-    dt = datetime.strptime(date_str, "%Y-%m-%d")
+    dt = _validate_date(date_str)
     return dt.year, dt.month, dt.day
 
 
@@ -190,11 +206,13 @@ def create_event(details):
         return {"success": False, "error": "Date is required"}
 
     try:
-        # Parse date and time
+        # Parse date and time with validation for clearer errors
         try:
+            _validate_date(date_str)
+            _validate_time(time_str)
             start_datetime = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
-        except ValueError:
-            return {"success": False, "error": "Invalid date or time format"}
+        except ValueError as e:
+            return {"success": False, "error": str(e)}
 
         end_datetime = start_datetime + timedelta(minutes=duration)
 
@@ -258,7 +276,10 @@ def delete_event(details):
 
     try:
         # Validate date format
-        datetime.strptime(date_str, "%Y-%m-%d")
+        try:
+            _validate_date(date_str)
+        except ValueError as e:
+            return {"success": False, "error": str(e)}
 
         script = f"""
         try
@@ -301,7 +322,13 @@ def move_event(details):
         return {"success": False, "error": "Title, old_date, and new_date are required"}
 
     try:
-        new_datetime = datetime.strptime(f"{new_date} {new_time}", "%Y-%m-%d %H:%M")
+        try:
+            _validate_date(old_date)
+            _validate_date(new_date)
+            _validate_time(new_time)
+            new_datetime = datetime.strptime(f"{new_date} {new_time}", "%Y-%m-%d %H:%M")
+        except ValueError as e:
+            return {"success": False, "error": str(e)}
 
         script = f"""
         try
