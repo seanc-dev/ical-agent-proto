@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from openai_client import interpret_command
-from calendar_agent import (
+from calendar_agent_eventkit import (
     list_events_and_reminders,
     create_event,
     delete_event,
@@ -44,6 +44,9 @@ if __name__ == "__main__":
         ]:
             # Use new flexible function for date or range
             result = list_events_and_reminders(start_date, end_date)
+            if result.get("error"):
+                print(f"❌ Error: {result['error']}")
+                continue
             if action in ["list_todays_events", "list_all"]:
                 print("\n📅 Events:")
                 for event in result.get("events", []):
