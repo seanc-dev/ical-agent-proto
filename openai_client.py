@@ -2,6 +2,7 @@
 
 from dotenv import load_dotenv  # load .env file
 import os
+
 try:
     import openai
 except Exception:  # pragma: no cover - optional dependency
@@ -96,7 +97,10 @@ calendar_functions = [
             "properties": {
                 "title": {"type": "string", "description": "Event title"},
                 "date": {"type": "string", "description": "Event date (YYYY-MM-DD)"},
-                "minutes_before": {"type": "integer", "description": "Minutes before event to trigger"},
+                "minutes_before": {
+                    "type": "integer",
+                    "description": "Minutes before event to trigger",
+                },
             },
             "required": ["title", "date"],
         },
@@ -108,22 +112,9 @@ def interpret_command(user_input):
     """
     Use GPT-4o function calling to interpret the user's natural language command and return a dict with action and details.
     """
-    # If no OpenAI client (e.g. missing API key), use simple rule-based fallback
+    # If no OpenAI client (e.g. missing API key), return an error
     if not client:
-        lower = user_input.lower()
-        if any(k in lower for k in ("delete", "cancel", "remove")):
-            return {"action": "delete_event"}
-        if any(k in lower for k in ("move", "reschedule", "shift")):
-            return {"action": "move_event"}
-        if any(k in lower for k in ("schedule", "create", "add", "book")):
-            return {"action": "create_event"}
-        if "reminder" in lower or "task" in lower:
-            return {"action": "list_reminders_only"}
-        if "event" in lower:
-            return {"action": "list_events_only"}
-        if "today" in lower or "on" in lower:
-            return {"action": "list_all"}
-        return {"action": "unknown", "details": user_input}
+        return {"action": "error", "details": "Missing OpenAI client"}
     try:
         response = client.chat.completions.create(
             model="gpt-4o",

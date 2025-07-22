@@ -115,6 +115,10 @@ class EventKitAgent:
         """Stub for moving events via EventKit."""
         return {"success": False, "error": "Not implemented"}
 
+    def add_notification(self, details):
+        """Stub for adding notifications via EventKit."""
+        return {"success": False, "error": "Not implemented"}
+
 
 # Instantiate agent
 _agent = EventKitAgent()
@@ -136,3 +140,7 @@ def delete_event(details):
 
 def move_event(details):
     return _agent.move_event(details)
+
+
+def add_notification(details):
+    return _agent.add_notification(details)
