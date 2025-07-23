@@ -3,7 +3,6 @@ import openai_client  # noqa: E0401, pylint: disable=import-error # type: ignore
 
 
 # Test duration extraction in fallback logic
-@pytest.mark.skip(reason="To be implemented: NLP duration extraction in fallback")
 def test_nlp_duration_extraction_hours(monkeypatch):
     # Ensure fallback mapping is used
     monkeypatch.setattr(openai_client, "client", None)
@@ -15,7 +14,6 @@ def test_nlp_duration_extraction_hours(monkeypatch):
     assert res["details"]["duration"] == 120  # type: ignore
 
 
-@pytest.mark.skip(reason="To be implemented: NLP duration extraction in fallback")
 def test_nlp_duration_extraction_minutes(monkeypatch):
     monkeypatch.setattr(openai_client, "client", None)
     res = openai_client.interpret_command(
@@ -27,7 +25,6 @@ def test_nlp_duration_extraction_minutes(monkeypatch):
 
 
 # Test location extraction in fallback logic
-@pytest.mark.skip(reason="To be implemented: NLP location extraction in fallback")
 def test_nlp_location_extraction(monkeypatch):
     monkeypatch.setattr(openai_client, "client", None)
     res = openai_client.interpret_command(

@@ -125,10 +125,10 @@ def interpret_command(user_input):
             m_min = re.search(r"(\d+)\s*(?:min(?:ute)?s?)", user_input, re.IGNORECASE)
             if m_min:
                 details["duration"] = int(m_min.group(1))
-        # Extract location (e.g., 'at the cafe')
-        m_loc = re.search(r"\bat\s+([^,;]+)(?:,|$)", user_input, re.IGNORECASE)
-        if m_loc:
-            details["location"] = m_loc.group(1).strip()
+        # Extract location after the last ' at '
+        if " at " in user_input:
+            loc = user_input.rsplit(" at ", 1)[1]
+            details["location"] = loc.strip()
         lower = user_input.lower()
         # Determine action based on keywords
         if any(k in lower for k in ("delete", "cancel", "remove")):
