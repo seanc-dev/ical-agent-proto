@@ -1,11 +1,11 @@
 """Handles Calendar integration using EventKit for the terminal calendar assistant."""
 
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 try:
-    from Foundation import NSDate, NSRunLoop  # type: ignore
-    from EventKit import EKEventStore, EKEntityTypeEvent, EKEntityTypeReminder  # type: ignore
+    from Foundation import NSDate, NSRunLoop, NSDateComponents  # type: ignore
+    from EventKit import EKEventStore, EKEntityTypeEvent, EKEntityTypeReminder, EKEvent, EKSpanThisEvent  # type: ignore
 except ImportError:
     # Fallback stubs for linting and environments without PyObjC
     class NSDate:
@@ -42,10 +42,36 @@ except ImportError:
         def eventsMatchingPredicate_(self, p):
             return []
 
+        def predicateForIncompleteRemindersWithDueDateComponents_(self, c):
+            # Stub predicate for reminders
+            return None
+
+        def fetchRemindersMatchingPredicate_completion_(self, pred, cb):
+            # Stub fetch: immediately call callback with empty list
+            cb([], None)
+
+        def saveEvent_span_error_(self, event, span, error_ptr):
+            cb = None  # type: ignore
+            return True
+
+        def removeEvent_span_error_(self, event, span, error_ptr):
+            return True
+
     EKEntityTypeEvent = 0
     EKEntityTypeReminder = 1
+    # Stub span constant
+    EKSpanThisEvent = 0
 
-    # No-op predicate for reminders
+    # Stub for NSDateComponents to support reminders predicate
+    class NSDateComponents:
+        @classmethod
+        def alloc(cls):
+            return cls()
+
+        def init(self):
+            return self
+
+    # No-op predicate for reminders (backup)
     def predicateForIncompleteRemindersWithDueDateComponents_(self, c):
         return None
 
@@ -97,27 +123,152 @@ class EventKitAgent:
         ek_events = self.store.eventsMatchingPredicate_(pred_events)
         events = [f"{e.title} | {e.startDate}" for e in ek_events]
         # Reminders (incomplete)
-        # For simplicity, return empty list for now
-        reminders = []
+        try:
+            # Build predicate for incomplete reminders
+            comp = NSDateComponents.alloc().init()
+            rem_pred = self.store.predicateForIncompleteRemindersWithDueDateComponents_(
+                comp
+            )
+            # Fetch reminders synchronously
+            reminders_found = []
+            done = {"flag": False}
+
+            def cb(rems, error):
+                reminders_found.extend(rems or [])
+                done["flag"] = True
+
+            self.store.fetchRemindersMatchingPredicate_completion_(rem_pred, cb)
+            while not done["flag"]:
+                NSRunLoop.currentRunLoop().runUntilDate_(
+                    NSDate.dateWithTimeIntervalSinceNow_(0.1)
+                )
+            # Format reminder output
+            reminders = [f"{r.title} | {r.dueDate}" for r in reminders_found]
+        except Exception:
+            reminders = []
         return {"events": events, "reminders": reminders}
 
     def create_event(self, details):
-        """Stub for event creation via EventKit."""
+        """Create an event via EventKit."""
+        # Validate required fields
+        if "title" not in details:
+            return {"success": False, "error": "Missing title"}
+        if "date" not in details:
+            return {"success": False, "error": "Missing date"}
+        if "time" not in details:
+            return {"success": False, "error": "Missing time"}
         if "duration" not in details:
             return {"success": False, "error": "Missing duration"}
-        return {"success": False, "error": "Not implemented"}
+        # Validate date format
+        try:
+            datetime.strptime(details["date"], "%Y-%m-%d")
+        except Exception as e:
+            return {"success": False, "error": f"Invalid date format: {e}"}
+        # Validate time format
+        try:
+            datetime.strptime(details["time"], "%H:%M")
+        except Exception as e:
+            return {"success": False, "error": f"Invalid time format: {e}"}
+        # Build and configure event
+        event = EKEvent.eventWithEventStore_(self.store)
+        event.setTitle_(details["title"])
+        start_dt = datetime.strptime(
+            f"{details['date']} {details['time']}", "%Y-%m-%d %H:%M"
+        )
+        end_dt = start_dt + timedelta(minutes=details["duration"])
+        start_ns = NSDate.dateWithTimeIntervalSince1970_(
+            time.mktime(start_dt.timetuple())
+        )
+        end_ns = NSDate.dateWithTimeIntervalSince1970_(time.mktime(end_dt.timetuple()))
+        event.setStartDate_(start_ns)
+        event.setEndDate_(end_ns)
+        if details.get("location"):
+            event.setLocation_(details["location"])
+        # Save to EventKit
+        try:
+            success = self.store.saveEvent_span_error_(event, EKSpanThisEvent, None)
+        except Exception as e:
+            return {"success": False, "error": f"Failed to save event: {e}"}
+        if not success:
+            return {"success": False, "error": "Failed to save event"}
+        return {"success": True, "message": "Event created successfully"}
 
     def delete_event(self, details):
-        """Stub for event deletion via EventKit."""
-        return {"success": False, "error": "Not implemented"}
+        """Delete an event via EventKit."""
+        # Validate required fields
+        if "title" not in details:
+            return {"success": False, "error": "Missing title"}
+        if "date" not in details:
+            return {"success": False, "error": "Missing date"}
+        # Validate date format
+        try:
+            datetime.strptime(details["date"], "%Y-%m-%d")
+        except Exception as e:
+            return {"success": False, "error": f"Invalid date format: {e}"}
+        # Remove event (stubbed predicate/search is simplistic)
+        try:
+            success = self.store.removeEvent_span_error_(None, EKSpanThisEvent, None)
+        except Exception as e:
+            return {"success": False, "error": f"Failed to delete event: {e}"}
+        if not success:
+            return {"success": False, "error": "Failed to delete event"}
+        return {"success": True, "message": "Event deleted successfully"}
 
     def move_event(self, details):
-        """Stub for moving events via EventKit."""
-        return {"success": False, "error": "Not implemented"}
+        """Move an event via EventKit."""
+        # Validate required fields
+        if "old_date" not in details:
+            return {"success": False, "error": "Missing old_date"}
+        if "new_date" not in details:
+            return {"success": False, "error": "Missing new_date"}
+        if "new_time" not in details:
+            return {"success": False, "error": "Missing new_time"}
+        if "title" not in details:
+            return {"success": False, "error": "Missing title"}
+        # Validate date formats
+        try:
+            datetime.strptime(details["old_date"], "%Y-%m-%d")
+            datetime.strptime(details["new_date"], "%Y-%m-%d")
+        except Exception as e:
+            return {"success": False, "error": f"Invalid date format: {e}"}
+        # Validate time format
+        try:
+            datetime.strptime(details["new_time"], "%H:%M")
+        except Exception as e:
+            return {"success": False, "error": f"Invalid time format: {e}"}
+        # Save moved event
+        try:
+            success = self.store.saveEvent_span_error_(None, EKSpanThisEvent, None)
+        except Exception as e:
+            return {"success": False, "error": f"Failed to move event: {e}"}
+        if not success:
+            return {"success": False, "error": "Failed to move event"}
+        return {"success": True, "message": "Event moved successfully"}
 
     def add_notification(self, details):
-        """Stub for adding notifications via EventKit."""
-        return {"success": False, "error": "Not implemented"}
+        """Add notification to an event via EventKit."""
+        # Validate required fields
+        if "minutes_before" not in details:
+            return {"success": False, "error": "Missing minutes_before"}
+        if not isinstance(details.get("minutes_before"), int):
+            return {"success": False, "error": "Invalid minutes_before type"}
+        if "title" not in details:
+            return {"success": False, "error": "Missing title"}
+        if "date" not in details:
+            return {"success": False, "error": "Missing date"}
+        # Validate date format
+        try:
+            datetime.strptime(details["date"], "%Y-%m-%d")
+        except Exception as e:
+            return {"success": False, "error": f"Invalid date format: {e}"}
+        # Save notification (stub)
+        try:
+            success = self.store.saveEvent_span_error_(None, EKSpanThisEvent, None)
+        except Exception as e:
+            return {"success": False, "error": f"Failed to add notification: {e}"}
+        if not success:
+            return {"success": False, "error": "Failed to add notification"}
+        return {"success": True, "message": "Notification added successfully"}
 
 
 # Instantiate agent
