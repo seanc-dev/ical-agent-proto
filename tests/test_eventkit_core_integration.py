@@ -5,6 +5,7 @@ from calendar_agent_eventkit import (
     delete_event,
     move_event,
     add_notification,
+    list_events_and_reminders,
 )
 
 # Tests for create_event
@@ -13,7 +14,8 @@ from calendar_agent_eventkit import (
 def test_create_event_missing_fields():
     res = create_event({})
     assert res["success"] is False
-    assert "duration" in res.get("error", "")
+    # Missing title should be reported first
+    assert "Missing title" in res.get("error", "")
 
 
 def test_create_event_success():
@@ -79,3 +81,18 @@ def test_add_notification_success():
     }
     res = add_notification(details)
     assert res.get("success") is True
+
+
+# Tests for list_events_and_reminders
+
+
+def test_list_events_default():
+    res = list_events_and_reminders()
+    assert isinstance(res, dict)
+    assert "events" in res and isinstance(res["events"], list)
+    assert "reminders" in res and isinstance(res["reminders"], list)
+
+
+def test_list_events_invalid_date():
+    res = list_events_and_reminders("invalid", "invalid")
+    assert "error" in res
