@@ -1,13 +1,14 @@
 """Wraps GPT-4o (OpenAI) calls for interpreting user commands in the terminal calendar assistant."""
 
-from dotenv import load_dotenv  # load .env file
+from dotenv import load_dotenv  # type: ignore
 import os
 
 try:
-    import openai
+    import openai  # type: ignore
 except Exception:  # pragma: no cover - optional dependency
     openai = None
 import json
+import re
 
 # Load environment variables from .env
 load_dotenv()
@@ -112,9 +113,38 @@ def interpret_command(user_input):
     """
     Use GPT-4o function calling to interpret the user's natural language command and return a dict with action and details.
     """
-    # If no OpenAI client (e.g. missing API key), return an error
+    # If no OpenAI client (e.g. missing API key), use rule-based fallback with extraction
     if not client:
-        return {"action": "error", "details": "Missing OpenAI client"}
+        details = {}
+        # Extract duration in hours (e.g., '2-hour')
+        m_hour = re.search(r"(\d+)\s*-?\s*hour", user_input, re.IGNORECASE)
+        if m_hour:
+            details["duration"] = int(m_hour.group(1)) * 60
+        else:
+            # Extract duration in minutes (e.g., '45min' or '45 minutes')
+            m_min = re.search(r"(\d+)\s*(?:min(?:ute)?s?)", user_input, re.IGNORECASE)
+            if m_min:
+                details["duration"] = int(m_min.group(1))
+        # Extract location (e.g., 'at the cafe')
+        m_loc = re.search(r"\bat\s+([^,;]+)(?:,|$)", user_input, re.IGNORECASE)
+        if m_loc:
+            details["location"] = m_loc.group(1).strip()
+        lower = user_input.lower()
+        # Determine action based on keywords
+        if any(k in lower for k in ("delete", "cancel", "remove")):
+            return {"action": "delete_event", "details": details}
+        if any(k in lower for k in ("move", "reschedule", "shift")):
+            return {"action": "move_event", "details": details}
+        if any(k in lower for k in ("schedule", "create", "add", "book")):
+            return {"action": "create_event", "details": details}
+        if "reminder" in lower or "task" in lower:
+            return {"action": "list_reminders_only", "details": details}
+        if "event" in lower or "events" in lower:
+            return {"action": "list_events_only", "details": details}
+        if "today" in lower or "on" in lower:
+            return {"action": "list_all", "details": details}
+        # Default fallback
+        return {"action": "error", "details": details}
     try:
         response = client.chat.completions.create(
             model="gpt-4o",
