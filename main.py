@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 # Load environment variables from .env FIRST
 load_dotenv()
 
-from openai_client import interpret_command
+import openai_client
 from calendar_agent_eventkit import (
     list_events_and_reminders,
     create_event,
@@ -24,7 +24,7 @@ if __name__ == "__main__":
             print("Goodbye!")
             break
         # Interpret the command using GPT-4o
-        interpreted = interpret_command(user_input)
+        interpreted = openai_client.interpret_command(user_input)
         print(f"\n[Interpreted]: {interpreted}")
 
         # Handle different action types
@@ -49,24 +49,42 @@ if __name__ == "__main__":
                 continue
             if action in ["list_todays_events", "list_all"]:
                 print("\n📅 Events:")
-                for event in result.get("events", []):
-                    print(f"  - {event}")
+                events = result.get("events", [])
+                if events:
+                    for event in events:
+                        print(f"  - {event}")
+                else:
+                    print("  (none)")
                 print("\n⏰ Reminders:")
-                for reminder in result.get("reminders", []):
-                    print(f"  - {reminder}")
+                reminders = result.get("reminders", [])
+                if reminders:
+                    for reminder in reminders:
+                        print(f"  - {reminder}")
+                else:
+                    print("  (none)")
             elif action == "list_events_only":
                 print("\n📅 Events:")
-                for event in result.get("events", []):
-                    print(f"  - {event}")
+                events = result.get("events", [])
+                if events:
+                    for event in events:
+                        print(f"  - {event}")
+                else:
+                    print("  (none)")
             elif action == "list_reminders_only":
                 print("\n⏰ Reminders:")
-                for reminder in result.get("reminders", []):
-                    print(f"  - {reminder}")
+                reminders = result.get("reminders", [])
+                if reminders:
+                    for reminder in reminders:
+                        print(f"  - {reminder}")
+                else:
+                    print("  (none)")
 
         elif action == "create_event":
             # Prompt for duration if not provided
             if "duration" not in details or details.get("duration") is None:
-                resp = input("Duration not specified. Is one hour enough? (enter minutes or press Enter for 60): ")
+                resp = input(
+                    "Duration not specified. Is one hour enough? (enter minutes or press Enter for 60): "
+                )
                 if resp.strip():
                     try:
                         details["duration"] = int(resp.strip())
