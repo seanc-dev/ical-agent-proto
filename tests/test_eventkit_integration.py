@@ -8,6 +8,7 @@ from calendar_agent_eventkit import (
     add_notification,
 )
 from calendar_agent_eventkit import _agent
+import re
 
 
 @pytest.fixture(autouse=True)
@@ -184,6 +185,8 @@ class TestListEventsIntegration:
         # List events for that date
         res_list = calendar_agent_eventkit.list_events_and_reminders(today, today)
         events = res_list.get("events", [])
+        # Ensure the event string includes the title and timestamp
+        pattern = rf"IntegrationTestEvent \| {today} 12:00:00"
         assert any(
-            "IntegrationTestEvent" in e for e in events
-        ), f"Expected 'IntegrationTestEvent' in events, got {events}"
+            re.match(pattern, e) for e in events
+        ), f"Event did not match pattern {pattern}, got {events}"
