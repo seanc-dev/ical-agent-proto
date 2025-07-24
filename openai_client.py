@@ -316,6 +316,7 @@ def interpret_command(user_input):
                 "4) If the text contains 'reminder' or 'task' → list_reminders_only. "
                 "5) If the text contains 'event' or 'appointment' → list_events_only. "
                 "6) General listing queries ('what's on', 'show me', 'what do I have', 'today', 'on') → list_all. "
+                "7) If the user mentions a weekday name (Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday), compute the next occurrence of that day relative to today and call list_events_only with start_date and end_date set to that date. "
                 # Location extraction
                 "When creating an event, if the user specifies a location (phrases like 'at the cafe', 'in Conference Room B', or 'on Zoom'), include it as the 'location' field in the function arguments; otherwise omit 'location'. "
                 # Duration extraction
