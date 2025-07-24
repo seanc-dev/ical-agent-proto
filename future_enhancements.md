@@ -3,40 +3,40 @@
 ## Completed Work
 
 - ✅ Date/time parsing error handling (invalid formats, leap years, out-of-range values).
-- ✅ Missing duration detection (returns error when duration is omitted).
-- ✅ Removed legacy AppleScript-based agent and migrated to EventKit integration.
+- ✅ Missing duration detection (prompts for duration when omitted).
+- ✅ EventKit integration for create_event, delete_event, move_event, add_notification, and recurring events.
+- ✅ Natural language fallback parsing and LLM-driven interpretation for dates, times, durations, and locations.
+- ✅ Comprehensive test suite: unit tests, CLI integration tests, NLP fallback tests, LLM invocation tests.
 
-## Next Priorities
+## Roadmap
 
-### Phase 1: Core EventKit Integration
+### Prototype (v0.x): CLI Calendar Assistant
 
-1. Implement `create_event`: Use EventKit to create events with title, date, time, duration, and location.
-2. Implement `delete_event`: Remove events via EventKit.
-3. Implement `move_event`: Reschedule events using EventKit.
-4. Implement `add_notification`: Add notifications/reminders to events via EventKit.
-5. Improve CLI feedback: Provide clear success and error messages.
+- Interactive terminal loop with GPT-4o function calling for intent parsing.
+- Core EventKit operations: full CRUD for events and reminders, including recurring events.
+- Basic fallback parsing when API key is absent.
+- User prompts for missing data (duration, location).
+- Rich success/error messaging in CLI.
 
-### Phase 2: Smart Features & NLP Enhancements
+### MVP (v1.0): AI-driven Mental Health Coaching App
 
-- Natural language extraction of duration and location (e.g., "2-hour meeting at cafe").
-- Travel time calculation and automatic travel-time alerts.
-- Recurring events support (e.g., "every Monday").
-- Smart scheduling suggestions with conflict detection.
+- Multi-platform Email integration (Gmail, Apple Mail via IMAP/SMTP): read, send, and categorize emails.
+- Calendar integration across platforms: unified 'Today' dashboard aggregating events, reminders, and emails.
+- Wins tracking and celebration: allow users to log achievements and view milestones.
+- Therapy Mode: AI-guided journaling prompts, check-ins, and personalized coaching messages.
+- Resource Library: curated articles, helplines, and initial EAP program links.
+- Advanced natural-language scheduling: model-based handling of dates/times/recurrences/locations/durations.
+- Responsive web frontend (React) and foundational mobile UI for iOS/Android.
+- Secure authentication and user profile management (OAuth for calendar and email).
 
-### Phase 3: Enhanced UX & Platform Expansion
+### Launch (v2.x): Enterprise & Advanced Features
 
-- Confirmation prompts and undo operations in CLI.
-- Voice integration (Siri/voice assistant) for hands-free interaction.
-- iOS/macOS native app: widgets, Siri shortcuts, share extensions, and background sync.
+- Telehealth integration: scheduling and managing sessions with human therapists, video call link generation.
+- Corporate Wellness Dashboard: admin analytics on usage, engagement, and wellness metrics.
+- Native mobile apps (iOS in Swift, Android in Kotlin) with push notifications and offline support.
+- Voice assistant support: Siri and Google Assistant command integration.
+- Biometric and wearable data integration for stress and mood tracking.
+- Internationalization and compliance: multi-language support, GDPR/HIPAA readiness.
+- API for third-party integrations and developer ecosystem.
 
-## Notes
-
-- This Python CLI remains a prototype; plan for a Swift/iOS migration leveraging EventKit.
-- Maintain backward compatibility with the current CLI API for seamless upgrades.
-
-## Project Rules
-
-- Commit any substantial changes incrementally with clear, descriptive messages.
-- Use dedicated feature branches for each new feature or bugfix.
-- Ensure all tests (unit, integration, CLI) pass before merging to main.
-- Keep integration tests marked separately to avoid slowing down the default test suite.
+**Once MVP features are stabilized and tested, revisit expanding the core CLI into the full app platform with these advanced capabilities.**
