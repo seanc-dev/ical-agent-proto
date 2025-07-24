@@ -101,16 +101,20 @@ except ImportError:
             return cls()
 
         def setTitle_(self, title):
-            pass
+            # Store title in stub event
+            self.title = title
 
         def setStartDate_(self, date):
-            pass
+            # Store start date (datetime) in stub event
+            self.startDate = date
 
         def setEndDate_(self, date):
-            pass
+            # Store end date in stub event
+            self.endDate = date
 
         def setLocation_(self, location):
-            pass
+            # Store location in stub event
+            self.location = location
 
         def setCalendar_(self, calendar):
             pass
