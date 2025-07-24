@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import openai_client
+import re  # For parsing duration input via regex
 from calendar_agent_eventkit import (
     list_events_and_reminders,
     create_event,
@@ -82,15 +83,23 @@ if __name__ == "__main__":
         elif action == "create_event":
             # Prompt for duration if not provided
             if "duration" not in details or details.get("duration") is None:
+                # Ask user for duration (default 60)
                 resp = input(
-                    "Duration not specified. Is one hour enough? (enter minutes or press Enter for 60): "
+                    "Duration not specified. Is one hour enough? (enter minutes e.g. 15 or press Enter for 60): "
                 )
-                if resp.strip():
+                resp_str = resp.strip()
+                if resp_str:
+                    # Try direct integer parsing
                     try:
-                        details["duration"] = int(resp.strip())
+                        details["duration"] = int(resp_str)
                     except ValueError:
-                        print("Invalid duration; defaulting to 60 minutes.")
-                        details["duration"] = 60
+                        # Fallback to extract first number via regex
+                        m = re.search(r"(\d+)", resp_str)
+                        if m:
+                            details["duration"] = int(m.group(1))
+                        else:
+                            print("Invalid duration; defaulting to 60 minutes.")
+                            details["duration"] = 60
                 else:
                     details["duration"] = 60
             result = create_event(details)

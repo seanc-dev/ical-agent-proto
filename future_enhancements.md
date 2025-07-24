@@ -33,3 +33,10 @@
 
 - This Python CLI remains a prototype; plan for a Swift/iOS migration leveraging EventKit.
 - Maintain backward compatibility with the current CLI API for seamless upgrades.
+
+## Project Rules
+
+- Commit any substantial changes incrementally with clear, descriptive messages.
+- Use dedicated feature branches for each new feature or bugfix.
+- Ensure all tests (unit, integration, CLI) pass before merging to main.
+- Keep integration tests marked separately to avoid slowing down the default test suite.
