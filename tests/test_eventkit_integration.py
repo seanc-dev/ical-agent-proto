@@ -15,8 +15,12 @@ def dummy_store(monkeypatch):
     """Replace the EventKit store with a dummy for integration testing."""
 
     class DummyStore:
+        def __init__(self):
+            self.saved_events = []
+
         def saveEvent_span_error_(self, event, span, error_ptr):
-            "Simulate successful save"
+            "Simulate successful save and record the event"
+            self.saved_events.append(event)
             return True
 
         def removeEvent_span_error_(self, event, span, error_ptr):
@@ -28,8 +32,8 @@ def dummy_store(monkeypatch):
             return "dummy_predicate"
 
         def eventsMatchingPredicate_(self, pred):
-            "Simulate no events found"
-            return []
+            "Return recorded events"
+            return self.saved_events
 
     dummy = DummyStore()
     monkeypatch.setattr(calendar_agent_eventkit._agent, "store", dummy)
@@ -37,7 +41,8 @@ def dummy_store(monkeypatch):
     # Stub EKEvent and span constant to avoid PyObjC bridging
     class DummyEvent:
         def __init__(self):
-            pass
+            self.title = None
+            self.startDate = None
 
         @classmethod
         def eventWithEventStore_(cls, store):
@@ -45,10 +50,10 @@ def dummy_store(monkeypatch):
 
         # Add setter stubs for EventKit properties
         def setTitle_(self, title):
-            pass
+            self.title = title
 
         def setStartDate_(self, date):
-            pass
+            self.startDate = date
 
         def setEndDate_(self, date):
             pass
@@ -159,3 +164,26 @@ class TestAddNotificationIntegration:
             {"title": "Meeting", "date": today, "minutes_before": "15"}
         )
         assert not res["success"]
+
+
+# New integration test for listing events after creation
+class TestListEventsIntegration:
+    def test_list_event_after_creation(self):
+        today = datetime.now().strftime("%Y-%m-%d")
+        details = {
+            "title": "IntegrationTestEvent",
+            "date": today,
+            "time": "12:00",
+            "duration": 30,
+        }
+        # Create the event
+        res_create = create_event(details)
+        assert res_create[
+            "success"
+        ], f"Failed to create event: {res_create.get('error')}"
+        # List events for that date
+        res_list = calendar_agent_eventkit.list_events_and_reminders(today, today)
+        events = res_list.get("events", [])
+        assert any(
+            "IntegrationTestEvent" in e for e in events
+        ), f"Expected 'IntegrationTestEvent' in events, got {events}"
