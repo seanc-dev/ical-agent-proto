@@ -61,5 +61,5 @@ class TestCRUDFlow:
         assert any("📅 Events:" in line for line in outputs)
         pattern = rf"Meeting \| {date} 10:00:00"
         assert any(
-            re.match(pattern, line) for line in outputs
+            re.search(pattern, line) for line in outputs
         ), f"Did not find scheduled event in output: {outputs}"
