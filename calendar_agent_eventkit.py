@@ -16,11 +16,13 @@ except ImportError:
     class NSDate:
         @staticmethod
         def dateWithTimeIntervalSince1970_(t):
-            return None
+            # Return a Python datetime for stubbing under pytest
+            return datetime.fromtimestamp(t)
 
         @staticmethod
         def dateWithTimeIntervalSinceNow_(t):
-            return None
+            # Return a Python datetime offset by seconds for stubbing under pytest
+            return datetime.fromtimestamp(time.time() + t)
 
     class NSRunLoop:
         @staticmethod
