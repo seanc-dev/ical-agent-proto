@@ -38,16 +38,23 @@ except ImportError:
             return cls()
 
         def init(self):
+            # Initialize in-memory event storage for stub
+            self._events = []
+            # Optionally track last query range
+            self._last_range = None
             return self
 
         def requestAccessToEntityType_completion_(self, et, cb):
             cb(True, None)
 
         def predicateForEventsWithStartDate_endDate_calendars_(self, s, e, c):
+            # Record the requested date range for filtering
+            self._last_range = (s, e)
             return None
 
         def eventsMatchingPredicate_(self, p):
-            return []
+            # Return all stored events (stub does not filter by date range)
+            return list(self._events)
 
         def predicateForIncompleteRemindersWithDueDateComponents_(self, c):
             # Stub predicate for reminders
@@ -58,10 +65,24 @@ except ImportError:
             cb([], None)
 
         def saveEvent_span_error_(self, event, span, error_ptr):
-            cb = None  # type: ignore
+            # Record saved event in-memory for stub
+            try:
+                self._events.append(event)
+            except Exception:
+                pass
             return True
 
         def removeEvent_span_error_(self, event, span, error_ptr):
+            # Remove events by matching title if possible, else clear all
+            try:
+                title = event.title() if callable(event.title) else event.title
+                self._events = [
+                    e
+                    for e in self._events
+                    if (e.title() if callable(e.title) else e.title) != title
+                ]
+            except Exception:
+                self._events.clear()
             return True
 
         # Provide default calendar stub

@@ -1,5 +1,6 @@
 import pytest
 from tests.test_cli_output import run_cli
+import re
 from datetime import datetime, timedelta
 
 pytestmark = pytest.mark.integration
@@ -44,3 +45,21 @@ class TestCRUDFlow:
         assert any("✅ Event moved successfully" in line for line in outputs)
         assert any("✅ Notification added successfully" in line for line in outputs)
         assert any("✅ Event deleted successfully" in line for line in outputs)
+
+    def test_schedule_then_list_sequence(self):
+        # End-to-end schedule then list flow
+        date = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
+        commands = [
+            f"schedule Meeting on {date} at 10:00 for 30 minutes",
+            "show my events",
+            "exit",
+        ]
+        outputs = run_cli(commands)
+        # Confirm creation
+        assert any("✅ Event created successfully" in line for line in outputs)
+        # Confirm listing includes the event with correct timestamp
+        assert any("📅 Events:" in line for line in outputs)
+        pattern = rf"Meeting \| {date} 10:00:00"
+        assert any(
+            re.match(pattern, line) for line in outputs
+        ), f"Did not find scheduled event in output: {outputs}"
