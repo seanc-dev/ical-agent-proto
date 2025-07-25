@@ -121,3 +121,21 @@ def parse_single_date_list(cmd: str):
         date = parse_date_string(m.group(1))
         return {"start_date": date, "end_date": date}
     return None
+
+
+def parse_command(cmd: str):
+    """
+    Try all rule-based parsers in order and return a dict with action and details for the first match.
+    """
+    for parser, action in [
+        (parse_list_range, "list_events_only"),
+        (parse_schedule_event, "create_event"),
+        (parse_delete_event, "delete_event"),
+        (parse_move_event, "move_event"),
+        (parse_add_notification, "add_notification"),
+        (parse_single_date_list, "list_events_only"),
+    ]:
+        details = parser(cmd)
+        if details:
+            return {"action": action, "details": details}
+    return None

@@ -20,6 +20,7 @@ from utils.command_utils import (
     parse_move_event,
     parse_add_notification,
     parse_single_date_list,
+    parse_command,
 )
 
 # Load environment variables from .env
@@ -128,18 +129,10 @@ def interpret_command(user_input):
     # Rule-based fallback only when no API key is provided; always prefer LLM when available
     # If no OpenAI client (e.g. missing API key), use rule-based fallback with extraction
     if not client:
-        # Rule-based parsers in precedence order
-        for parser, action in [
-            (parse_list_range, "list_events_only"),
-            (parse_schedule_event, "create_event"),
-            (parse_delete_event, "delete_event"),
-            (parse_move_event, "move_event"),
-            (parse_add_notification, "add_notification"),
-            (parse_single_date_list, "list_events_only"),
-        ]:
-            details = parser(user_input)
-            if details:
-                return {"action": action, "details": details}
+        # Rule-based parser fallback
+        parsed = parse_command(user_input)
+        if parsed:
+            return {"action": parsed["action"], "details": parsed["details"]}
         # Default unknown
         return {"action": "error", "details": {}}
     try:
