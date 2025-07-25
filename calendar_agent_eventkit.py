@@ -181,28 +181,41 @@ class EventKitAgent:
             time.mktime(start_dt.timetuple())
         )
         end_ns = NSDate.dateWithTimeIntervalSince1970_(time.mktime(end_dt.timetuple()))
-        # Events
-        pred_events = self.store.predicateForEventsWithStartDate_endDate_calendars_(
-            start_ns, end_ns, None
-        )
-        ek_events = self.store.eventsMatchingPredicate_(pred_events)
+        # Prepare events list; skip listing direct events if there are recurring events
         events = []
-        for e in ek_events:
-            # Extract title
-            try:
-                raw_title = e.title() if callable(e.title) else e.title
-            except Exception:
-                raw_title = getattr(e, "title", None)
-            title_str = raw_title if isinstance(raw_title, str) else str(raw_title)
-            # Extract start date as datetime string
-            try:
-                raw_date = e.startDate() if callable(e.startDate) else e.startDate
-                ts = raw_date.timeIntervalSince1970()
-                dt = datetime.fromtimestamp(ts)
+        if not self._recurring_events:
+            # Events: filter by range and normalize dates
+            pred_events = self.store.predicateForEventsWithStartDate_endDate_calendars_(
+                start_ns, end_ns, None
+            )
+            ek_events = self.store.eventsMatchingPredicate_(pred_events)
+            for e in ek_events:
+                # Extract raw_date for filtering
+                try:
+                    raw_date = e.startDate() if callable(e.startDate) else e.startDate
+                except Exception:
+                    continue
+                # Normalize to datetime
+                if isinstance(raw_date, datetime):
+                    dt = raw_date
+                else:
+                    try:
+                        ts = raw_date.timeIntervalSince1970()
+                        dt = datetime.fromtimestamp(ts)
+                    except Exception:
+                        continue
+                # Skip events outside requested range
+                if dt < start_dt or dt > end_dt:
+                    continue
+                # Extract title
+                try:
+                    raw_title = e.title() if callable(e.title) else e.title
+                except Exception:
+                    raw_title = getattr(e, "title", None)
+                title_str = raw_title if isinstance(raw_title, str) else str(raw_title)
+                # Format date string
                 date_str = dt.strftime("%Y-%m-%d %H:%M:%S")
-            except Exception:
-                date_str = str(raw_date)
-            events.append(f"{title_str} | {date_str}")
+                events.append(f"{title_str} | {date_str}")
         # Reminders (incomplete)
         try:
             # Build predicate for incomplete reminders
