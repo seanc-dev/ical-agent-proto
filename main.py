@@ -15,6 +15,7 @@ from calendar_agent_eventkit import (
     move_event,
     add_notification,
 )
+from utils.cli_output import format_events, format_reminders, print_events_and_reminders
 
 # Main terminal loop
 if __name__ == "__main__":
@@ -43,42 +44,19 @@ if __name__ == "__main__":
             "list_events_only",
             "list_reminders_only",
         ]:
-            # Use new flexible function for date or range
+            # Use CLI output helpers
             result = list_events_and_reminders(start_date, end_date)
             if result.get("error"):
                 print(f"❌ Error: {result['error']}")
                 continue
+            events = result.get("events", [])
+            reminders = result.get("reminders", [])
             if action in ["list_todays_events", "list_all"]:
-                print("\n📅 Events:")
-                events = result.get("events", [])
-                if events:
-                    for event in events:
-                        print(f"  - {event}")
-                else:
-                    print("  (none)")
-                print("\n⏰ Reminders:")
-                reminders = result.get("reminders", [])
-                if reminders:
-                    for reminder in reminders:
-                        print(f"  - {reminder}")
-                else:
-                    print("  (none)")
+                print_events_and_reminders(events, reminders)
             elif action == "list_events_only":
-                print("\n📅 Events:")
-                events = result.get("events", [])
-                if events:
-                    for event in events:
-                        print(f"  - {event}")
-                else:
-                    print("  (none)")
+                print(format_events(events))
             elif action == "list_reminders_only":
-                print("\n⏰ Reminders:")
-                reminders = result.get("reminders", [])
-                if reminders:
-                    for reminder in reminders:
-                        print(f"  - {reminder}")
-                else:
-                    print("  (none)")
+                print(format_reminders(reminders))
 
         elif action == "create_event":
             # Prompt for duration if not provided
