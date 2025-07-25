@@ -9,7 +9,10 @@ except Exception:  # pragma: no cover - optional dependency
     openai = None
 import json
 import re
+
+# Normalized date parsing import
 from datetime import datetime, timedelta  # Added for date parsing in fallback
+from utils.date_utils import parse_date_string
 
 # Load environment variables from .env
 load_dotenv()

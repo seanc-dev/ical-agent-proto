@@ -2,6 +2,7 @@
 
 import time
 from datetime import datetime, timedelta
+from utils.date_utils import parse_date_string
 import sys
 
 # Attempt real PyObjC integration unless running under pytest
@@ -161,17 +162,20 @@ class EventKitAgent:
 
     def list_events_and_reminders(self, start_date=None, end_date=None):
         """List events and incomplete reminders between start_date and end_date."""
-        # Default to today and parse date range, with error handling
+        # Default to today
         if not start_date:
             start_date = datetime.now().strftime("%Y-%m-%d")
         if not end_date:
             end_date = start_date
+        # Normalize date strings (ISO, tomorrow, weekday names)
         try:
-            start_dt = datetime.strptime(f"{start_date} 00:00", "%Y-%m-%d %H:%M")
-            end_dt = datetime.strptime(f"{end_date} 23:59", "%Y-%m-%d %H:%M")
-        except Exception as e:
-            # Invalid date format
-            return {"events": [], "reminders": [], "error": f"Invalid date format: {e}"}
+            start_date = parse_date_string(start_date)
+            end_date = parse_date_string(end_date)
+        except ValueError as e:
+            return {"events": [], "reminders": [], "error": str(e)}
+        # Parse to datetimes
+        start_dt = datetime.strptime(f"{start_date} 00:00", "%Y-%m-%d %H:%M")
+        end_dt = datetime.strptime(f"{end_date} 23:59", "%Y-%m-%d %H:%M")
         # Convert to NSDate
         start_ns = NSDate.dateWithTimeIntervalSince1970_(
             time.mktime(start_dt.timetuple())
