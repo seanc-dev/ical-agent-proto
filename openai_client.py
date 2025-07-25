@@ -129,11 +129,11 @@ def interpret_command(user_input):
     # Rule-based fallback only when no API key is provided; always prefer LLM when available
     # If no OpenAI client (e.g. missing API key), use rule-based fallback with extraction
     if not client:
-        # Rule-based parser fallback
+        # Rule-based parser fallback (only accept explicit matches)
         parsed = parse_command(user_input)
-        if parsed:
+        if parsed and parsed.get("action") != "unknown":
             return {"action": parsed["action"], "details": parsed["details"]}
-        # Default unknown
+        # Default error for unknown or no match
         return {"action": "error", "details": {}}
     try:
         # Provide current date, time, and day context to the LLM
@@ -183,20 +183,11 @@ def interpret_command(user_input):
                 arguments = message.function_call.arguments or {}
             return {"action": func_name, "details": arguments}
         else:
-            # Fallback mapping when function calling returns no selection
-            lower = user_input.lower()
-            if any(k in lower for k in ("delete", "cancel", "remove")):
-                return {"action": "delete_event", "details": {}}
-            if any(k in lower for k in ("move", "reschedule", "shift")):
-                return {"action": "move_event", "details": {}}
-            if any(k in lower for k in ("schedule", "create", "add", "book")):
-                return {"action": "create_event", "details": {}}
-            if "reminder" in lower or "task" in lower:
-                return {"action": "list_reminders_only", "details": {}}
-            if "event" in lower:
-                return {"action": "list_events_only", "details": {}}
-            if "today" in lower or "on" in lower:
-                return {"action": "list_all", "details": {}}
+            # Fallback to unified rule-based parsing
+            parsed = parse_command(user_input)
+            if parsed and parsed.get("action") != "unknown":
+                return {"action": parsed["action"], "details": parsed["details"]}
+            # Unknown action: return original input as details
             return {"action": "unknown", "details": user_input}
     except Exception as e:
         return {"action": "error", "details": str(e)}
