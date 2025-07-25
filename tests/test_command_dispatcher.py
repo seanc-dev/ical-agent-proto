@@ -31,6 +31,5 @@ class TestDispatchFunction:
         ],
     )
     def test_dispatch_calls_handler(self, action, details):
-        # For now, handlers are unimplemented stubs, so this should raise
-        with pytest.raises(KeyError):
-            dispatch(action, details)
+        # Should not raise for registered handlers
+        assert dispatch(action, details) is None
