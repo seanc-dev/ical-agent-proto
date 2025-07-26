@@ -1,0 +1,7 @@
+# .cursor.yaml
+language: python
+auto_confirm: true # skip every prompt
+commit: true # auto-commit its edits
+branch: cursor/auto # target branch
+run:
+  - pytest tests/test_date_utils.py -q
