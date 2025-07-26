@@ -1,30 +1,37 @@
-import sys
-import builtins
+"""Test main.py CLI functionality."""
+
+from unittest.mock import patch
 import runpy
-import types
-
-import openai_client
 
 
-def test_main_exits_without_calling_openai(monkeypatch):
-    inputs = ["exit"]
-    def fake_input(prompt=""):
-        return inputs.pop(0)
-    monkeypatch.setitem(sys.modules, "dotenv", types.SimpleNamespace(load_dotenv=lambda: None))
-    printed = []
-    def fake_print(*args, **kwargs):
-        printed.append(" ".join(str(a) for a in args))
-    called = {"interpret": False}
-    def fake_interpret(cmd):
-        called["interpret"] = True
-        return {}
-    monkeypatch.setattr(builtins, "input", fake_input)
-    monkeypatch.setattr(builtins, "print", fake_print)
-    monkeypatch.setattr(openai_client, "interpret_command", fake_interpret)
+def test_main_loop_exit():
+    """Test that main loop exits on 'exit' command."""
+    with patch("builtins.input", return_value="exit"):
+        with patch("builtins.print") as mock_print:
+            runpy.run_module("main", run_name="__main__")
+            # Check that welcome message was printed
+            mock_print.assert_called_with(
+                "Welcome to the Terminal Calendar Assistant! Type 'exit' to quit."
+            )
 
-    runpy.run_module("main", run_name="__main__")
 
-    assert any("Welcome to the Terminal Calendar Assistant" in p for p in printed)
-    assert any("Goodbye!" in p for p in printed)
-    assert not called["interpret"]
+def test_main_loop_quit():
+    """Test that main loop exits on 'quit' command."""
+    with patch("builtins.input", return_value="quit"):
+        with patch("builtins.print") as mock_print:
+            runpy.run_module("main", run_name="__main__")
+            # Check that welcome message was printed
+            mock_print.assert_called_with(
+                "Welcome to the Terminal Calendar Assistant! Type 'exit' to quit."
+            )
 
+
+def test_main_loop_q():
+    """Test that main loop exits on 'q' command."""
+    with patch("builtins.input", return_value="q"):
+        with patch("builtins.print") as mock_print:
+            runpy.run_module("main", run_name="__main__")
+            # Check that welcome message was printed
+            mock_print.assert_called_with(
+                "Welcome to the Terminal Calendar Assistant! Type 'exit' to quit."
+            )

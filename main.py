@@ -1,13 +1,11 @@
 """Main terminal loop for the calendar assistant. Handles user input, interpretation, and calendar actions."""
 
-import os
 from dotenv import load_dotenv
 
 # Load environment variables from .env FIRST
 load_dotenv()
 
 import openai_client
-import re  # For parsing duration input via regex
 from utils.command_dispatcher import dispatch
 
 # Main terminal loop

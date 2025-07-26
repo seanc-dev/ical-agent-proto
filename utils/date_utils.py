@@ -1,4 +1,3 @@
-import re
 from datetime import datetime, timedelta
 
 # Mapping from weekday names to Python's weekday index (Monday=0)
