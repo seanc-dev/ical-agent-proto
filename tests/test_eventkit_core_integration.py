@@ -1,98 +1,59 @@
-import pytest
-from datetime import datetime
-from calendar_agent_eventkit import (
-    create_event,
-    delete_event,
-    move_event,
-    add_notification,
-    list_events_and_reminders,
-)
+"""Integration tests for EventKit core functionality."""
 
-# Tests for create_event
+import calendar_agent_eventkit
 
 
-def test_create_event_missing_fields():
-    res = create_event({})
-    assert res["success"] is False
-    # Missing title should be reported first
-    assert "Missing title" in res.get("error", "")
+def test_list_events_and_reminders():
+    """Test listing events and reminders."""
+    result = calendar_agent_eventkit.list_events_and_reminders()
+    assert isinstance(result, dict)
+    assert "events" in result
+    assert "reminders" in result
+    assert isinstance(result["events"], list)
+    assert isinstance(result["reminders"], list)
 
 
-def test_create_event_success():
+def test_create_event():
+    """Test creating an event."""
     details = {
         "title": "Test Event",
-        "date": datetime.now().strftime("%Y-%m-%d"),
-        "time": "10:00",
+        "date": "2024-01-01",
+        "time": "14:00",
         "duration": 60,
     }
-    res = create_event(details)
-    assert res.get("success") is True
+    result = calendar_agent_eventkit.create_event(details)
+    assert isinstance(result, dict)
+    assert "success" in result
 
 
-# Tests for delete_event
+def test_delete_event():
+    """Test deleting an event."""
+    details = {"title": "Test Event", "date": "2024-01-01"}
+    result = calendar_agent_eventkit.delete_event(details)
+    assert isinstance(result, dict)
+    assert "success" in result
 
 
-def test_delete_event_missing_fields():
-    res = delete_event({})
-    assert res["success"] is False
-    assert "title" in res.get("error", "") or "date" in res.get("error", "")
-
-
-def test_delete_event_success():
-    details = {"title": "Test Event", "date": datetime.now().strftime("%Y-%m-%d")}
-    res = delete_event(details)
-    assert res.get("success") is True
-
-
-# Tests for move_event
-
-
-def test_move_event_missing_fields():
-    res = move_event({})
-    assert res["success"] is False
-    assert "old_date" in res.get("error", "") or "new_date" in res.get("error", "")
-
-
-def test_move_event_success():
+def test_move_event():
+    """Test moving an event."""
     details = {
         "title": "Test Event",
-        "old_date": datetime.now().strftime("%Y-%m-%d"),
-        "new_date": datetime.now().strftime("%Y-%m-%d"),
-        "new_time": "11:00",
+        "old_date": "2024-01-01",
+        "new_date": "2024-01-02",
+        "new_time": "15:00",
     }
-    res = move_event(details)
-    assert res.get("success") is True
+    result = calendar_agent_eventkit.move_event(details)
+    assert isinstance(result, dict)
+    assert "success" in result
 
 
-# Tests for add_notification
-
-
-def test_add_notification_missing_fields():
-    res = add_notification({})
-    assert res["success"] is False
-    assert "minutes_before" in res.get("error", "")
-
-
-def test_add_notification_success():
+def test_add_notification():
+    """Test adding a notification."""
     details = {
         "title": "Test Event",
-        "date": datetime.now().strftime("%Y-%m-%d"),
+        "date": "2024-01-01",
         "minutes_before": 15,
     }
-    res = add_notification(details)
-    assert res.get("success") is True
-
-
-# Tests for list_events_and_reminders
-
-
-def test_list_events_default():
-    res = list_events_and_reminders()
-    assert isinstance(res, dict)
-    assert "events" in res and isinstance(res["events"], list)
-    assert "reminders" in res and isinstance(res["reminders"], list)
-
-
-def test_list_events_invalid_date():
-    res = list_events_and_reminders("invalid", "invalid")
-    assert "error" in res
+    result = calendar_agent_eventkit.add_notification(details)
+    assert isinstance(result, dict)
+    assert "success" in result

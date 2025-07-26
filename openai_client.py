@@ -8,20 +8,8 @@ try:
 except Exception:  # pragma: no cover - optional dependency
     openai = None
 import json
-import re
-
-# Normalized date parsing import
-from datetime import datetime, timedelta  # Added for date parsing in fallback
-from utils.date_utils import parse_date_string
-from utils.command_utils import (
-    parse_list_range,
-    parse_schedule_event,
-    parse_delete_event,
-    parse_move_event,
-    parse_add_notification,
-    parse_single_date_list,
-    parse_command,
-)
+from datetime import datetime
+from utils.command_utils import parse_command
 
 # Load environment variables from .env
 load_dotenv()
@@ -126,7 +114,6 @@ def interpret_command(user_input):
     """
     Use GPT-4o function calling to interpret the user's natural language command and return a dict with action and details.
     """
-    # Rule-based fallback only when no API key is provided; always prefer LLM when available
     # If no OpenAI client (e.g. missing API key), use rule-based fallback with extraction
     if not client:
         # Rule-based parser fallback (only accept explicit matches)

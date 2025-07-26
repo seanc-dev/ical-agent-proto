@@ -1,10 +1,8 @@
 import re
-from datetime import datetime, timedelta
 from utils.date_utils import parse_date_string
 from typing import Optional, Dict, Any
 
 
-# Parses 'list events from START to END'
 def parse_list_range(cmd: str) -> Optional[Dict[str, Any]]:
     """Parse 'list events from START to END' and return {'start_date': str, 'end_date': str} or None."""
     m = re.search(r"list events from\s+(\S+)\s+to\s+(\S+)", cmd, re.IGNORECASE)
@@ -16,7 +14,6 @@ def parse_list_range(cmd: str) -> Optional[Dict[str, Any]]:
     return None
 
 
-# Parses 'schedule TITLE on DATE at TIME for DURATION minutes'
 def parse_schedule_event(cmd: str) -> Optional[Dict[str, Any]]:
     """Parse 'schedule TITLE on DATE at TIME for DURATION minutes' into event creation details or None."""
     m = re.match(
@@ -55,7 +52,6 @@ def parse_schedule_event(cmd: str) -> Optional[Dict[str, Any]]:
     return None
 
 
-# Parses 'delete TITLE on DATE'
 def parse_delete_event(cmd: str) -> Optional[Dict[str, Any]]:
     """Parse 'delete TITLE on DATE' into deletion details or None."""
     m = re.match(r"delete\s+(.+?)\s+on\s+(\S+)", cmd, re.IGNORECASE)
@@ -66,7 +62,6 @@ def parse_delete_event(cmd: str) -> Optional[Dict[str, Any]]:
     return None
 
 
-# Parses 'move TITLE on OLD_DATE to NEW_DATE at NEW_TIME'
 def parse_move_event(cmd: str) -> Optional[Dict[str, Any]]:
     """Parse 'move TITLE on OLD_DATE to NEW_DATE at NEW_TIME' into move details or None."""
     m = re.match(
@@ -105,7 +100,6 @@ def parse_move_event(cmd: str) -> Optional[Dict[str, Any]]:
     return None
 
 
-# Parses 'add notification to TITLE on DATE MIN minutes before'
 def parse_add_notification(cmd: str) -> Optional[Dict[str, Any]]:
     """Parse 'add notification to TITLE on DATE MIN minutes before' into reminder details or None."""
     m = re.match(
@@ -120,7 +114,6 @@ def parse_add_notification(cmd: str) -> Optional[Dict[str, Any]]:
     return None
 
 
-# Parses 'events for/on YYYY-MM-DD' and allows weekday or 'tomorrow'
 def parse_single_date_list(cmd: str) -> Optional[Dict[str, Any]]:
     """Parse 'events for/on DATE' into a single-date list query or None."""
     m = re.search(r"events?\s+(?:for|on)\s+(\S+)", cmd, re.IGNORECASE)

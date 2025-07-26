@@ -1,72 +1,56 @@
-import types
-import builtins
+"""Test OpenAI client functionality."""
 
+from unittest.mock import patch, MagicMock
 import openai_client
 
 
-def test_interpret_command_no_api_key(monkeypatch):
-    monkeypatch.setattr(openai_client, "client", None)
-    result = openai_client.interpret_command("hi")
-    assert result["action"] == "error"
+def test_interpret_command_no_api_key():
+    """Test interpretation when no API key is available."""
+    with patch("openai_client.client", None):
+        result = openai_client.interpret_command("hello")
+        assert result["action"] == "error"
+        assert "details" in result
 
 
-class FakeMessage:
-    def __init__(self, name, arguments):
-        self.function_call = types.SimpleNamespace(name=name, arguments=arguments)
+def test_interpret_command_with_api_key():
+    """Test interpretation when API key is available."""
+    mock_client = MagicMock()
+    mock_response = MagicMock()
+    mock_message = MagicMock()
+    mock_message.function_call = None
+    mock_response.choices = [mock_message]
+    mock_client.chat.completions.create.return_value = mock_response
 
-class FakeResponse:
-    def __init__(self, message):
-        self.choices = [types.SimpleNamespace(message=message)]
-
-class FakeCompletions:
-    def __init__(self, response):
-        self._response = response
-
-    def create(self, *args, **kwargs):
-        return self._response
-
-class FakeChat:
-    def __init__(self, response):
-        self.completions = FakeCompletions(response)
-
-class FakeClient:
-    def __init__(self, response):
-        self.chat = FakeChat(response)
+    with patch("openai_client.client", mock_client):
+        result = openai_client.interpret_command("hello")
+        assert result["action"] == "unknown"
+        assert result["details"] == "hello"
 
 
-def test_interpret_command_success(monkeypatch):
-    message = FakeMessage("list_all", "{}")
-    response = FakeResponse(message)
-    fake_client = FakeClient(response)
-    monkeypatch.setattr(openai_client, "client", fake_client)
-    result = openai_client.interpret_command("show events")
-    assert result == {"action": "list_all", "details": {}}
+def test_interpret_command_function_call():
+    """Test interpretation with function call response."""
+    mock_client = MagicMock()
+    mock_response = MagicMock()
+    mock_message = MagicMock()
+    mock_function_call = MagicMock()
+    mock_function_call.name = "list_all"
+    mock_function_call.arguments = "{}"
+    mock_message.function_call = mock_function_call
+    mock_response.choices = [mock_message]
+    mock_client.chat.completions.create.return_value = mock_response
+
+    with patch("openai_client.client", mock_client):
+        result = openai_client.interpret_command("show me today's events")
+        assert result["action"] == "list_all"
+        assert result["details"] == {}
 
 
-def test_interpret_command_add_notification(monkeypatch):
-    message = FakeMessage("add_notification", '{"title":"Meet","date":"2024-08-01"}')
-    response = FakeResponse(message)
-    fake_client = FakeClient(response)
-    monkeypatch.setattr(openai_client, "client", fake_client)
-    result = openai_client.interpret_command("remind me")
-    assert result["action"] == "add_notification"
-    assert result["details"]["title"] == "Meet"
+def test_interpret_command_exception():
+    """Test interpretation when an exception occurs."""
+    mock_client = MagicMock()
+    mock_client.chat.completions.create.side_effect = Exception("API Error")
 
-def test_interpret_command_unknown(monkeypatch):
-    message = types.SimpleNamespace(function_call=None)
-    response = FakeResponse(message)
-    fake_client = FakeClient(response)
-    monkeypatch.setattr(openai_client, "client", fake_client)
-    result = openai_client.interpret_command("hello")
-    assert result == {"action": "unknown", "details": "hello"}
-
-
-def test_interpret_command_exception(monkeypatch):
-    class ErrorCompletions:
-        def create(self, *args, **kwargs):
-            raise RuntimeError("boom")
-    fake_client = types.SimpleNamespace(chat=types.SimpleNamespace(completions=ErrorCompletions()))
-    monkeypatch.setattr(openai_client, "client", fake_client)
-    result = openai_client.interpret_command("hi")
-    assert result["action"] == "error"
-    assert "boom" in result["details"]
+    with patch("openai_client.client", mock_client):
+        result = openai_client.interpret_command("hello")
+        assert result["action"] == "error"
+        assert "API Error" in result["details"]
