@@ -5,3 +5,15 @@ commit: true # auto-commit its edits
 branch: cursor/auto # target branch
 run:
   - pytest tests/test_date_utils.py -q
+auto_run:
+  # by default, everything’s allowed
+  # allowlist: ['*']
+
+  denylist:
+    - rm *
+    - mv *
+    - git reset --hard
+    - git reset --hard *
+    - git clean *
+    - sudo *
+    - docker *
