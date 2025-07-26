@@ -9,7 +9,7 @@ except Exception:  # pragma: no cover - optional dependency
     openai = None
 import json
 from datetime import datetime
-from utils.command_utils import parse_command
+
 
 # Load environment variables from .env
 load_dotenv()
@@ -107,6 +107,45 @@ calendar_functions = [
             "required": ["title", "date"],
         },
     },
+    {
+        "name": "clarify",
+        "description": "Ask user for clarification when request is ambiguous",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "question": {
+                    "type": "string",
+                    "description": "Specific question to ask user",
+                },
+                "context": {
+                    "type": "string",
+                    "description": "Context about what was unclear",
+                },
+                "options": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Available options if applicable",
+                },
+            },
+            "required": ["question"],
+        },
+    },
+    {
+        "name": "error",
+        "description": "Return error with helpful message when request cannot be processed",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "message": {"type": "string", "description": "Error message"},
+                "suggestion": {
+                    "type": "string",
+                    "description": "Helpful suggestion for user",
+                },
+                "reason": {"type": "string", "description": "Reason for the error"},
+            },
+            "required": ["message"],
+        },
+    },
 ]
 
 
@@ -114,14 +153,16 @@ def interpret_command(user_input):
     """
     Use GPT-4o function calling to interpret the user's natural language command and return a dict with action and details.
     """
-    # If no OpenAI client (e.g. missing API key), use rule-based fallback with extraction
+    # If no OpenAI client (e.g. missing API key), return error
     if not client:
-        # Rule-based parser fallback (only accept explicit matches)
-        parsed = parse_command(user_input)
-        if parsed and parsed.get("action") != "unknown":
-            return {"action": parsed["action"], "details": parsed["details"]}
-        # Default error for unknown or no match
-        return {"action": "error", "details": {}}
+        return {
+            "action": "error",
+            "details": {
+                "message": "OpenAI API not available",
+                "suggestion": "Please check your API key configuration",
+                "reason": "Missing or invalid OpenAI API key",
+            },
+        }
     try:
         # Provide current date, time, and day context to the LLM
         now = datetime.now()
@@ -132,21 +173,26 @@ def interpret_command(user_input):
             "role": "system",
             "content": (
                 f"You are a calendar assistant. Today is {current_day}, {current_date} at {current_time}. "
-                "Respond only with a JSON function call to exactly one of the available functions: "
-                "create_event, delete_event, move_event, list_reminders_only, list_events_only, list_all. "
-                "Follow this precedence strictly: "
-                "1) Cancellation verbs (delete, cancel, remove) → delete_event. "
-                "2) Rescheduling verbs (move, reschedule, shift) → move_event. "
-                "3) Scheduling verbs (schedule, create, add, book) → create_event. "
-                "4) If the text contains 'reminder' or 'task' → list_reminders_only. "
-                "5) If the text contains 'event' or 'appointment' → list_events_only. "
-                "6) General listing queries ('what's on', 'show me', 'what do I have', 'today', 'on') → list_all. "
-                "7) If the user mentions a weekday name (Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday), compute the next occurrence of that day relative to today and call list_events_only with start_date and end_date set to that date. "
-                # Location extraction
-                "When creating an event, if the user specifies a location (phrases like 'at the cafe', 'in Conference Room B', or 'on Zoom'), include it as the 'location' field in the function arguments; otherwise omit 'location'. "
-                # Duration extraction
-                "When creating an event, if the user specifies a duration (phrases like 'for 45 minutes', 'for one hour', 'for 2 hours'), include it as the 'duration' field (integer minutes) in the function arguments; otherwise omit 'duration'. "
-                "Do not return any other text. If no rule matches, return action 'unknown'."
+                "Handle user requests intelligently and gracefully. "
+                "Use the available functions to respond appropriately. "
+                "EDGE CASE HANDLING: "
+                "- Misspellings: 'shedule' → understand as 'schedule' "
+                "- Poor grammar: Extract the core intent, ignore extra words "
+                "- Ambiguous dates: Ask for clarification using 'clarify' function "
+                "- Vague requests: Ask specific questions using 'clarify' function "
+                "- Past dates: Return error with suggestion to use future date "
+                "- Invalid dates: Return error with suggestion to use YYYY-MM-DD format "
+                "- Vague references ('it', 'that meeting'): Ask for clarification "
+                "WHEN TO USE FUNCTIONS: "
+                "- create_event: For scheduling new events "
+                "- delete_event: For removing events "
+                "- move_event: For rescheduling events "
+                "- list_events_only: For viewing calendar events "
+                "- list_reminders_only: For viewing reminders/tasks "
+                "- list_all: For viewing both events and reminders "
+                "- clarify: When request is ambiguous or unclear "
+                "- error: When request cannot be processed (invalid dates, etc.) "
+                "Always provide helpful responses. If uncertain, ask for clarification rather than guess."
             ),
         }
         response = client.chat.completions.create(
@@ -156,6 +202,7 @@ def interpret_command(user_input):
             function_call="auto",
             temperature=0.0,
             max_tokens=256,
+            timeout=30,  # 30 second timeout to prevent hanging
         )
         message = response.choices[0].message
         if message.function_call:
@@ -170,11 +217,13 @@ def interpret_command(user_input):
                 arguments = message.function_call.arguments or {}
             return {"action": func_name, "details": arguments}
         else:
-            # Fallback to unified rule-based parsing
-            parsed = parse_command(user_input)
-            if parsed and parsed.get("action") != "unknown":
-                return {"action": parsed["action"], "details": parsed["details"]}
-            # Unknown action: return original input as details
-            return {"action": "unknown", "details": user_input}
+            # No function call returned - ask for clarification
+            return {
+                "action": "clarify",
+                "details": {
+                    "question": "I didn't understand your request. Could you please rephrase it?",
+                    "context": "The request was unclear or ambiguous",
+                },
+            }
     except Exception as e:
         return {"action": "error", "details": str(e)}
