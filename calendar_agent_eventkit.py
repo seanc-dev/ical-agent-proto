@@ -4,6 +4,7 @@ import time
 from datetime import datetime, timedelta
 from utils.date_utils import parse_date_string
 import sys
+import os  # for selecting calendar by env var
 
 # Attempt real PyObjC integration unless running under pytest
 try:
@@ -144,6 +145,24 @@ class EventKitAgent:
         self._recurring_events = []
         self._deleted_series = set()
         self._deleted_occurrences = {}
+        # Select calendar from environment if provided
+        cal_name = os.getenv("CALENDAR_NAME")
+        if cal_name:
+            try:
+                all_cals = self.store.calendarsForEntityType_(EKEntityTypeEvent)
+                matching = []
+                for c in all_cals:
+                    try:
+                        title = c.title() if callable(c.title) else c.title
+                    except Exception:
+                        title = getattr(c, "title", None)
+                    if title == cal_name:
+                        matching.append(c)
+                self._calendar = matching[0] if matching else None
+            except Exception:
+                self._calendar = None
+        else:
+            self._calendar = None
 
     def _request_access(self, entity_type):
         """Request access and block until granted."""
@@ -185,8 +204,10 @@ class EventKitAgent:
         events = []
         if not self._recurring_events:
             # Events: filter by range and normalize dates
+            # Use configured calendar if set, else all calendars
+            calendars = [self._calendar] if getattr(self, "_calendar", None) else None
             pred_events = self.store.predicateForEventsWithStartDate_endDate_calendars_(
-                start_ns, end_ns, None
+                start_ns, end_ns, calendars
             )
             ek_events = self.store.eventsMatchingPredicate_(pred_events)
             for e in ek_events:
@@ -327,10 +348,13 @@ class EventKitAgent:
         event.setEndDate_(end_ns)
         if details.get("location"):
             event.setLocation_(details["location"])
-        # Assign event to the default calendar for new events if supported
+        # Assign to configured calendar or default calendar
         try:
-            default_cal = self.store.defaultCalendarForNewEvents()
-            event.setCalendar_(default_cal)
+            if getattr(self, "_calendar", None):
+                event.setCalendar_(self._calendar)
+            else:
+                default_cal = self.store.defaultCalendarForNewEvents()
+                event.setCalendar_(default_cal)
         except Exception:
             pass
         # Handle recurring events
