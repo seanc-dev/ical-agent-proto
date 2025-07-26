@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 import time
 
 
+@pytest.mark.e2e
 class TestEndToEndCLI:
     """Test the full CLI pipeline with real user input simulation."""
 
@@ -220,15 +221,17 @@ class TestEndToEndCLI:
         print("\n=== Testing: Natural language parsing (full pipeline) ===")
 
         test_cases = [
-            "show me tomorrow's events",
-            "what's on Friday",
-            "schedule lunch tomorrow at noon",
-            "delete the meeting on Monday",
+            ("show me tomorrow's events", ["show me tomorrow's events", "exit"]),
+            ("what's on Friday", ["what's on Friday", "exit"]),
+            (
+                "schedule lunch tomorrow at noon",
+                ["schedule lunch tomorrow at noon", "60", "exit"],
+            ),
+            ("delete the meeting on Monday", ["delete the meeting on Monday", "exit"]),
         ]
 
-        for command in test_cases:
+        for command, inputs in test_cases:
             print(f"Testing command: '{command}'")
-            inputs = [command, "exit"]
 
             returncode, stdout, stderr = self.run_cli_command(inputs)
 
@@ -248,15 +251,20 @@ class TestEndToEndCLI:
 
         # Test with invalid commands
         invalid_commands = [
-            "invalid command",
-            "schedule meeting on invalid-date",
-            "delete event that doesn't exist",
-            "move event to invalid time",
+            ("invalid command", ["invalid command", "exit"]),
+            (
+                "schedule meeting on invalid-date",
+                ["schedule meeting on invalid-date", "60", "exit"],
+            ),
+            (
+                "delete event that doesn't exist",
+                ["delete event that doesn't exist", "exit"],
+            ),
+            ("move event to invalid time", ["move event to invalid time", "exit"]),
         ]
 
-        for command in invalid_commands:
+        for command, inputs in invalid_commands:
             print(f"Testing invalid command: '{command}'")
-            inputs = [command, "exit"]
 
             returncode, stdout, stderr = self.run_cli_command(inputs)
 
