@@ -15,7 +15,7 @@ def test_cli_integration_list_events():
     with patch(
         "utils.command_dispatcher.list_events_and_reminders", return_value=mock_result
     ):
-        with patch("builtins.input", return_value="show me today's events"):
+        with patch("builtins.input", side_effect=["show me today's events", "exit"]):
             with patch("builtins.print") as mock_print:
                 # Mock the interpret_command to return a known action
                 with patch(
@@ -33,7 +33,8 @@ def test_cli_integration_create_event():
 
     with patch("utils.command_dispatcher.create_event", return_value=mock_result):
         with patch(
-            "builtins.input", return_value="schedule meeting on 2024-01-01 at 2pm"
+            "builtins.input",
+            side_effect=["schedule meeting on 2024-01-01 at 2pm", "exit"],
         ):
             with patch("builtins.print") as mock_print:
                 # Mock the interpret_command to return create_event action
@@ -59,7 +60,9 @@ def test_cli_integration_delete_event():
     mock_result = {"success": True, "message": "Event deleted successfully"}
 
     with patch("utils.command_dispatcher.delete_event", return_value=mock_result):
-        with patch("builtins.input", return_value="delete meeting on 2024-01-01"):
+        with patch(
+            "builtins.input", side_effect=["delete meeting on 2024-01-01", "exit"]
+        ):
             with patch("builtins.print") as mock_print:
                 # Mock the interpret_command to return delete_event action
                 with patch(
@@ -76,7 +79,7 @@ def test_cli_integration_delete_event():
 
 def test_cli_integration_unknown_action():
     """Test CLI integration for unknown actions."""
-    with patch("builtins.input", return_value="unknown command"):
+    with patch("builtins.input", side_effect=["unknown command", "exit"]):
         with patch("builtins.print") as mock_print:
             # Mock the interpret_command to return unknown action
             with patch(
@@ -93,7 +96,7 @@ def test_cli_integration_error_handling():
     mock_result = {"success": False, "error": "Test error"}
 
     with patch("utils.command_dispatcher.create_event", return_value=mock_result):
-        with patch("builtins.input", return_value="schedule invalid event"):
+        with patch("builtins.input", side_effect=["schedule invalid event", "exit"]):
             with patch("builtins.print") as mock_print:
                 # Mock the interpret_command to return create_event action
                 with patch(

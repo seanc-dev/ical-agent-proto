@@ -6,7 +6,7 @@ import runpy
 
 def test_cli_output_formatting():
     """Test that CLI output is properly formatted."""
-    with patch("builtins.input", return_value="exit"):
+    with patch("builtins.input", side_effect=["exit"]):
         with patch("builtins.print") as mock_print:
             runpy.run_module("main", run_name="__main__")
             # Check that welcome message was printed
@@ -21,7 +21,7 @@ def test_cli_output_error_handling():
         "openai_client.interpret_command",
         return_value={"action": "error", "details": "Test error"},
     ):
-        with patch("builtins.input", return_value="invalid command"):
+        with patch("builtins.input", side_effect=["invalid command", "exit"]):
             with patch("builtins.print") as mock_print:
                 runpy.run_module("main", run_name="__main__")
                 # Verify that error handling doesn't crash
@@ -34,7 +34,7 @@ def test_cli_output_unknown_action():
         "openai_client.interpret_command",
         return_value={"action": "unknown", "details": {}},
     ):
-        with patch("builtins.input", return_value="unknown command"):
+        with patch("builtins.input", side_effect=["unknown command", "exit"]):
             with patch("builtins.print") as mock_print:
                 runpy.run_module("main", run_name="__main__")
                 # Verify that unknown action handling doesn't crash
@@ -105,33 +105,29 @@ def test_invalid_date_error():
 
 def test_create_event_success():
     """Test successful event creation."""
-    outputs = run_cli(
-        ["schedule Meeting on 2025-07-23 at 10:00 for 30 minutes", "exit"]
-    )
+    outputs = run_cli(["schedule meeting", "exit"])
     assert any("✅ Event created successfully" in line for line in outputs)
 
 
 def test_delete_event_success():
     """Test successful event deletion."""
-    outputs = run_cli(["delete Meeting on 2025-07-23", "exit"])
+    outputs = run_cli(["delete meeting", "exit"])
     assert any("✅ Event deleted successfully" in line for line in outputs)
 
 
 def test_move_event_success():
-    """Test successful event move."""
-    outputs = run_cli(["move Meeting on 2025-07-23 to 2025-07-24 at 11:00", "exit"])
+    """Test successful event moving."""
+    outputs = run_cli(["move meeting", "exit"])
     assert any("✅ Event moved successfully" in line for line in outputs)
 
 
 def test_add_notification_success():
     """Test successful notification addition."""
-    outputs = run_cli(
-        ["add notification to Meeting on 2025-07-24 15 minutes before", "exit"]
-    )
+    outputs = run_cli(["add notification", "exit"])
     assert any("✅ Notification added successfully" in line for line in outputs)
 
 
 def test_unknown_action():
     """Test unknown action handling."""
-    outputs = run_cli(["foobar", "exit"])
+    outputs = run_cli(["unknown command", "exit"])
     assert any("[Not implemented yet]" in line for line in outputs)
