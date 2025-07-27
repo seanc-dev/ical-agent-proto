@@ -15,6 +15,7 @@ if __name__ == "__main__":
 
     # Initialize conversation state for session memory
     conversation_state = ConversationState()
+    turn_count = 0
 
     while True:
         user_input = input("\n> ")
@@ -22,8 +23,14 @@ if __name__ == "__main__":
             print("Goodbye!")
             break
 
-        # Get conversation context for LLM
-        context = conversation_state.get_context_for_llm_prompt()
+        # Build conversation context for LLM, including current user input on subsequent turns
+        if conversation_state.turn_count > 0:
+            # Include recent turns and the current user input in context
+            context = conversation_state.get_context_for_llm_prompt()
+            context += f"\nUser: {user_input}"
+        else:
+            # No context on first turn
+            context = ""
 
         # Interpret the command using GPT-4o with conversation context
         interpreted = openai_client.interpret_command(user_input, context)
@@ -46,3 +53,4 @@ if __name__ == "__main__":
 
         # Update conversation state with this turn
         conversation_state.append_turn(user_input, action, details)
+        turn_count += 1
