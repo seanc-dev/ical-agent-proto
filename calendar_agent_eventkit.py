@@ -6,6 +6,14 @@ from utils.date_utils import parse_date_string
 import sys
 import os  # for selecting calendar by env var
 
+# Import Core memory system
+try:
+    from core.memory_manager import CoreMemory
+
+    CORE_MEMORY_AVAILABLE = True
+except ImportError:
+    CORE_MEMORY_AVAILABLE = False
+
 # Attempt real PyObjC integration unless running under pytest
 try:
     if "pytest" in sys.modules:
@@ -171,6 +179,14 @@ class EventKitAgent:
                 self._calendar = None
         else:
             self._calendar = None
+
+        # Initialize Core memory system
+        self.core_memory = None
+        if CORE_MEMORY_AVAILABLE:
+            try:
+                self.core_memory = CoreMemory()
+            except Exception as e:
+                print(f"Warning: Could not initialize Core memory: {e}")
 
     def _request_access(self, entity_type):
         """Request access and block until granted."""
@@ -386,6 +402,25 @@ class EventKitAgent:
             return {"success": False, "error": f"Failed to save event: {e}"}
         if not success:
             return {"success": False, "error": "Failed to save event"}
+
+        # Add to Core memory system
+        if self.core_memory:
+            try:
+                event_data = {
+                    "title": details["title"],
+                    "description": details.get("description", ""),
+                    "start_date": details["date"],
+                    "duration": details["duration"],
+                    "attendees": details.get("attendees", []),
+                    "location": details.get("location", ""),
+                    "is_recurring": "recurrence_rule" in details,
+                    "recurrence_pattern": details.get("recurrence_rule", ""),
+                    "text_for_embedding": f"{details['title']} | {details.get('description', '')} | Location: {details.get('location', '')}",
+                }
+                self.core_memory.add_past_event(event_data)
+            except Exception as e:
+                print(f"Warning: Could not add event to Core memory: {e}")
+
         return {"success": True, "message": "Event created successfully"}
 
     def delete_event(self, details):
@@ -407,6 +442,25 @@ class EventKitAgent:
             return {"success": False, "error": f"Failed to delete event: {e}"}
         if not success:
             return {"success": False, "error": "Failed to delete event"}
+
+        # Remove from Core memory system
+        if self.core_memory:
+            try:
+                # Find and delete the event from Core memory
+                # This is a simplified approach - in a real system you'd want more sophisticated matching
+                title = details.get("title")
+                if title:
+                    # Search for memories with this title and delete them
+                    memories_to_delete = []
+                    for memory_id, memory in self.core_memory.memories.items():
+                        if hasattr(memory, "title") and memory.title == title:
+                            memories_to_delete.append(memory_id)
+
+                    for memory_id in memories_to_delete:
+                        self.core_memory.delete_memory(memory_id)
+            except Exception as e:
+                print(f"Warning: Could not remove event from Core memory: {e}")
+
         # Handle recurring deletion flags
         title = details.get("title")
         if details.get("delete_series"):
@@ -445,6 +499,37 @@ class EventKitAgent:
             return {"success": False, "error": f"Failed to move event: {e}"}
         if not success:
             return {"success": False, "error": "Failed to move event"}
+
+        # Update Core memory system
+        if self.core_memory:
+            try:
+                # Find and update the event in Core memory
+                title = details.get("title")
+                if title:
+                    # Search for memories with this title and update them
+                    for memory_id, memory in self.core_memory.memories.items():
+                        if hasattr(memory, "title") and memory.title == title:
+                            # Update the event data
+                            event_data = {
+                                "title": title,
+                                "description": getattr(memory, "description", ""),
+                                "start_date": details["new_date"],
+                                "duration": getattr(memory, "duration", 60),
+                                "attendees": getattr(memory, "attendees", []),
+                                "location": getattr(memory, "location", ""),
+                                "is_recurring": getattr(memory, "is_recurring", False),
+                                "recurrence_pattern": getattr(
+                                    memory, "recurrence_pattern", ""
+                                ),
+                                "text_for_embedding": f"{title} | {getattr(memory, 'description', '')} | Location: {getattr(memory, 'location', '')}",
+                            }
+                            # Delete old memory and add updated one
+                            self.core_memory.delete_memory(memory_id)
+                            self.core_memory.add_past_event(event_data)
+                            break
+            except Exception as e:
+                print(f"Warning: Could not update event in Core memory: {e}")
+
         return {"success": True, "message": "Event moved successfully"}
 
     def add_notification(self, details):
