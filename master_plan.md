@@ -160,6 +160,44 @@ Build a truly conversational calendar assistant that feels like talking to a rea
 - **Follow-up Tracking**: "remind me to check on the project status next week"
 - **Context Preservation**: "what did we discuss in last week's meeting?"
 
+### Core Integration — Phase One
+
+Core is the inference layer that turns a reactive assistant into a proactive, intelligent agent. It gives the MVP semantic memory, narrative awareness, and long-term recall by embedding and indexing life data — starting with calendar events, later expanding to reminders, email, and conversations.
+
+#### ✅ Current Status
+
+- **Working Apple Calendar integration** with full conversational control
+- **EventKit + GPT-4o pipeline** live
+- **Prototype driven by tests**
+- **Cursor auto-mode** in place
+- **Embedding tech** not yet implemented but central to the vision
+
+#### 🔜 Phase One Goals
+
+1. **Create First Embedding Index**
+
+   - Extract titles + descriptions from past calendar events
+   - Embed using OpenAI or similar
+   - Store locally in JSON or a vector DB like ChromaDB
+
+2. **Implement recall() Function**
+
+   - Enable semantic search for similar past events
+   - Use in commands like: "Schedule my usual Tuesday check-in with B"
+
+3. **Contextual Nudging**
+
+   - Add logic to suggest likely next actions
+   - Example: "You usually check email around this time — want me to open it?"
+
+4. **Structured Memory Types**
+   - Define types of memory Core will hold:
+     - **Past Events** (calendar, reminders, emails)
+     - **Intentions** (e.g. "I want to get fitter")
+     - **Commitments** (e.g. "follow up with Anna")
+     - **Preferences** (e.g. "no meetings before 11am")
+   - Draft a JSON schema or begin logging from tests and user inputs
+
 ### Advanced Conversational Features
 
 #### Multi-modal Interaction

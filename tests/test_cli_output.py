@@ -59,12 +59,12 @@ def run_cli(inputs):
     def fake_input(prompt=""):
         return inputs.pop(0) if inputs else "exit"
 
+    def fake_interpret_command(cmd, context=""):
+        return fallback_map.get(cmd, {"action": "unknown", "details": {}})
+
     with patch("builtins.print", fake_print):
         with patch("builtins.input", fake_input):
-            with patch(
-                "openai_client.interpret_command",
-                lambda cmd: fallback_map.get(cmd, {"action": "unknown", "details": {}}),
-            ):
+            with patch("openai_client.interpret_command", fake_interpret_command):
                 try:
                     runpy.run_module("main", run_name="__main__")
                 except SystemExit:
