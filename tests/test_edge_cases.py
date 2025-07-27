@@ -32,7 +32,7 @@ class TestInputNormalizationEdgeCases:
                 )
                 mock_client.chat.completions.create.return_value = mock_response
 
-                result = openai_client.interpret_command(input_text)
+                result = openai_client.interpret_command(input_text, "")
                 assert result["action"] == "create_event"
                 # LLM should understand the intent despite misspellings
 
@@ -55,7 +55,7 @@ class TestInputNormalizationEdgeCases:
                 )
                 mock_client.chat.completions.create.return_value = mock_response
 
-                result = openai_client.interpret_command(input_text)
+                result = openai_client.interpret_command(input_text, "")
                 assert result["action"] == "create_event"
 
     def test_mixed_case_and_whitespace(self):
@@ -76,7 +76,7 @@ class TestInputNormalizationEdgeCases:
                 )
                 mock_client.chat.completions.create.return_value = mock_response
 
-                result = openai_client.interpret_command(input_text)
+                result = openai_client.interpret_command(input_text, "")
                 assert result["action"] == "create_event"
 
     def test_punctuation_handling(self):
@@ -97,7 +97,7 @@ class TestInputNormalizationEdgeCases:
                 )
                 mock_client.chat.completions.create.return_value = mock_response
 
-                result = openai_client.interpret_command(input_text)
+                result = openai_client.interpret_command(input_text, "")
                 assert result["action"] in [
                     "create_event",
                     "delete_event",
@@ -127,7 +127,7 @@ class TestDateTimeEdgeCases:
                 )
                 mock_client.chat.completions.create.return_value = mock_response
 
-                result = openai_client.interpret_command(input_text)
+                result = openai_client.interpret_command(input_text, "")
                 assert result["action"] == "error"
                 assert "Invalid date" in result["details"]["message"]
 
@@ -150,7 +150,7 @@ class TestDateTimeEdgeCases:
                 )
                 mock_client.chat.completions.create.return_value = mock_response
 
-                result = openai_client.interpret_command(input_text)
+                result = openai_client.interpret_command(input_text, "")
                 assert result["action"] == "error"
                 assert "Past date" in result["details"]["message"]
 
@@ -173,7 +173,7 @@ class TestDateTimeEdgeCases:
                 )
                 mock_client.chat.completions.create.return_value = mock_response
 
-                result = openai_client.interpret_command(input_text)
+                result = openai_client.interpret_command(input_text, "")
                 assert result["action"] == "clarify"
                 assert expected_clarification in result["details"]["question"]
 
@@ -197,7 +197,7 @@ class TestDateTimeEdgeCases:
                 )
                 mock_client.chat.completions.create.return_value = mock_response
 
-                result = openai_client.interpret_command(input_text)
+                result = openai_client.interpret_command(input_text, "")
                 assert result["action"] == "create_event"
 
 
@@ -222,7 +222,7 @@ class TestContextDependencyEdgeCases:
                 )
                 mock_client.chat.completions.create.return_value = mock_response
 
-                result = openai_client.interpret_command(input_text)
+                result = openai_client.interpret_command(input_text, "")
                 assert result["action"] == "clarify"
                 assert expected_question in result["details"]["question"]
 
@@ -243,7 +243,7 @@ class TestContextDependencyEdgeCases:
                 )
                 mock_client.chat.completions.create.return_value = mock_response
 
-                result = openai_client.interpret_command(input_text)
+                result = openai_client.interpret_command(input_text, "")
                 assert result["action"] == "clarify"
                 assert "Multiple matches" in result["details"]["question"]
 
@@ -265,7 +265,7 @@ class TestContextDependencyEdgeCases:
                 )
                 mock_client.chat.completions.create.return_value = mock_response
 
-                result = openai_client.interpret_command(input_text)
+                result = openai_client.interpret_command(input_text, "")
                 assert result["action"] == "clarify"
                 assert expected_question in result["details"]["question"]
 
@@ -294,7 +294,7 @@ class TestComplexRequestEdgeCases:
                 )
                 mock_client.chat.completions.create.return_value = mock_response
 
-                result = openai_client.interpret_command(input_text)
+                result = openai_client.interpret_command(input_text, "")
                 assert result["action"] == "create_event"
                 # In real implementation, would handle subsequent steps
 
@@ -315,7 +315,7 @@ class TestComplexRequestEdgeCases:
                 )
                 mock_client.chat.completions.create.return_value = mock_response
 
-                result = openai_client.interpret_command(input_text)
+                result = openai_client.interpret_command(input_text, "")
                 assert result["action"] == expected_action
 
     def test_bulk_operations(self):
@@ -335,7 +335,7 @@ class TestComplexRequestEdgeCases:
                 )
                 mock_client.chat.completions.create.return_value = mock_response
 
-                result = openai_client.interpret_command(input_text)
+                result = openai_client.interpret_command(input_text, "")
                 assert result["action"] == "confirm"
 
 
@@ -347,16 +347,16 @@ class TestSystemResilienceEdgeCases:
         with patch("openai_client.client") as mock_client:
             mock_client.chat.completions.create.side_effect = Exception("API timeout")
 
-            # Should fall back to rule-based parsing
-            result = openai_client.interpret_command("schedule meeting tomorrow")
-            assert result["action"] in ["create_event", "unknown"]
+            # Should return error action
+            result = openai_client.interpret_command("schedule meeting tomorrow", "")
+            assert result["action"] == "error"
 
     def test_invalid_api_key(self):
         """Test graceful handling of invalid API key."""
         with patch("openai_client.client", None):
-            # Should use fallback parsing
-            result = openai_client.interpret_command("schedule meeting tomorrow")
-            assert result["action"] in ["create_event", "unknown"]
+            # Should return error action
+            result = openai_client.interpret_command("schedule meeting tomorrow", "")
+            assert result["action"] == "error"
 
     def test_rate_limiting(self):
         """Test graceful handling of rate limiting."""
@@ -365,9 +365,9 @@ class TestSystemResilienceEdgeCases:
                 "Rate limit exceeded"
             )
 
-            # Should fall back to rule-based parsing
-            result = openai_client.interpret_command("delete meeting")
-            assert result["action"] in ["delete_event", "unknown"]
+            # Should return error action
+            result = openai_client.interpret_command("delete meeting", "")
+            assert result["action"] == "error"
 
 
 class TestUserExperienceEdgeCases:
@@ -384,7 +384,7 @@ class TestUserExperienceEdgeCases:
             )
             mock_client.chat.completions.create.return_value = mock_response
 
-            result = openai_client.interpret_command("show my events")
+            result = openai_client.interpret_command("show my events", "")
             assert result["action"] == "list_events_only"
             # In real implementation, would show "No events found" message
 
@@ -399,7 +399,7 @@ class TestUserExperienceEdgeCases:
             )
             mock_client.chat.completions.create.return_value = mock_response
 
-            result = openai_client.interpret_command("list all events this year")
+            result = openai_client.interpret_command("list all events this year", "")
             assert result["action"] == "list_events_only"
             # In real implementation, would paginate or limit results
 

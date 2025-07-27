@@ -149,9 +149,13 @@ calendar_functions = [
 ]
 
 
-def interpret_command(user_input):
+def interpret_command(user_input, conversation_context=""):
     """
     Use GPT-4o function calling to interpret the user's natural language command and return a dict with action and details.
+
+    Args:
+        user_input: The user's input text
+        conversation_context: Optional conversation context from previous turns
     """
     # If no OpenAI client (e.g. missing API key), return error
     if not client:
@@ -169,32 +173,44 @@ def interpret_command(user_input):
         current_date = now.strftime("%Y-%m-%d")
         current_time = now.strftime("%H:%M")
         current_day = now.strftime("%A")
+
+        # Build system message with conversation context
+        system_content = (
+            f"You are a calendar assistant. Today is {current_day}, {current_date} at {current_time}. "
+            "Handle user requests intelligently and gracefully. "
+            "Use the available functions to respond appropriately. "
+        )
+
+        # Add conversation context if available
+        if conversation_context:
+            system_content += f"\nCONVERSATION CONTEXT:\n{conversation_context}\n"
+
+        system_content += (
+            "EDGE CASE HANDLING: "
+            "- Misspellings: 'shedule' → understand as 'schedule' "
+            "- Poor grammar: Extract the core intent, ignore extra words "
+            "- Ambiguous dates: Ask for clarification using 'clarify' function "
+            "- Vague requests: Ask specific questions using 'clarify' function "
+            "- Past dates: Return error with suggestion to use future date "
+            "- Invalid dates: Return error with suggestion to use YYYY-MM-DD format "
+            "- Vague references ('it', 'that meeting'): Ask for clarification "
+            "WHEN TO USE FUNCTIONS: "
+            "- create_event: For scheduling new events "
+            "- delete_event: For removing events "
+            "- move_event: For rescheduling events "
+            "- list_events_only: For viewing calendar events "
+            "- list_reminders_only: For viewing reminders/tasks "
+            "- list_all: For viewing both events and reminders "
+            "- clarify: When request is ambiguous or unclear "
+            "- error: When request cannot be processed (invalid dates, etc.) "
+            "Always provide helpful responses. If uncertain, ask for clarification rather than guess."
+        )
+
         system_message = {
             "role": "system",
-            "content": (
-                f"You are a calendar assistant. Today is {current_day}, {current_date} at {current_time}. "
-                "Handle user requests intelligently and gracefully. "
-                "Use the available functions to respond appropriately. "
-                "EDGE CASE HANDLING: "
-                "- Misspellings: 'shedule' → understand as 'schedule' "
-                "- Poor grammar: Extract the core intent, ignore extra words "
-                "- Ambiguous dates: Ask for clarification using 'clarify' function "
-                "- Vague requests: Ask specific questions using 'clarify' function "
-                "- Past dates: Return error with suggestion to use future date "
-                "- Invalid dates: Return error with suggestion to use YYYY-MM-DD format "
-                "- Vague references ('it', 'that meeting'): Ask for clarification "
-                "WHEN TO USE FUNCTIONS: "
-                "- create_event: For scheduling new events "
-                "- delete_event: For removing events "
-                "- move_event: For rescheduling events "
-                "- list_events_only: For viewing calendar events "
-                "- list_reminders_only: For viewing reminders/tasks "
-                "- list_all: For viewing both events and reminders "
-                "- clarify: When request is ambiguous or unclear "
-                "- error: When request cannot be processed (invalid dates, etc.) "
-                "Always provide helpful responses. If uncertain, ask for clarification rather than guess."
-            ),
+            "content": system_content,
         }
+
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[system_message, {"role": "user", "content": user_input}],
