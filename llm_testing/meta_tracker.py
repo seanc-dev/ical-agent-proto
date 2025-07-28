@@ -1,8 +1,11 @@
 """Meta-tracker for insights and recommendations in LLM-to-LLM testing framework."""
 
+import uuid
+from datetime import datetime
 from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
 from .config import TestingConfig
+from .insights_database import InsightsDatabase, Insight
 
 
 @dataclass
@@ -48,15 +51,29 @@ class MetaTracker:
     def __init__(self, config: TestingConfig):
         """Initialize the meta-tracker."""
         self.config = config
-        self.insights_db = None  # TODO: Implement InsightsDatabase
+        self.insights_db = InsightsDatabase()
         self.trend_analyzer = None  # TODO: Implement TrendAnalyzer
         self.issue_tracker = None  # TODO: Implement IssueTracker
         self.version_tracker = None  # TODO: Implement VersionTracker
 
     def track_insight(self, insight: Insight):
         """Store a new insight with version information."""
-        # TODO: Implement actual insight tracking
-        print(f"Tracking insight: {insight.insight_type} - {insight.description}")
+        # Generate unique ID if not provided
+        if not hasattr(insight, "insight_id") or not insight.insight_id:
+            insight.insight_id = str(uuid.uuid4())
+
+        # Set timestamp if not provided
+        if not hasattr(insight, "timestamp") or not insight.timestamp:
+            insight.timestamp = datetime.now().isoformat()
+
+        # Store in database
+        success = self.insights_db.store_insight(insight)
+        if success:
+            print(f"✅ Tracked insight: {insight.insight_type} - {insight.description}")
+        else:
+            print(
+                f"❌ Failed to track insight: {insight.insight_type} - {insight.description}"
+            )
 
         # Update trend analysis
         self._update_trend_analysis(insight)
@@ -112,13 +129,11 @@ class MetaTracker:
 
     def get_insights_by_type(self, insight_type: str) -> List[Insight]:
         """Get insights by type."""
-        # TODO: Implement actual insight retrieval
-        return []
+        return self.insights_db.get_insights_by_type(insight_type)
 
     def get_insights_by_version(self, code_version: str) -> List[Insight]:
         """Get insights by code version."""
-        # TODO: Implement version-based insight retrieval
-        return []
+        return self.insights_db.get_insights_by_version(code_version)
 
     def get_trends(self) -> Dict[str, Any]:
         """Get trend analysis results."""
