@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
 from .config import TestingConfig
 from .insights_database import InsightsDatabase, Insight
+from .trend_analyzer import TrendAnalyzer
 
 
 @dataclass
@@ -52,7 +53,7 @@ class MetaTracker:
         """Initialize the meta-tracker."""
         self.config = config
         self.insights_db = InsightsDatabase()
-        self.trend_analyzer = None  # TODO: Implement TrendAnalyzer
+        self.trend_analyzer = TrendAnalyzer(self.insights_db)
         self.issue_tracker = None  # TODO: Implement IssueTracker
         self.version_tracker = None  # TODO: Implement VersionTracker
 
@@ -111,7 +112,24 @@ class MetaTracker:
 
     def _update_trend_analysis(self, insight: Insight):
         """Update trend analysis with new insight."""
-        # TODO: Implement trend analysis
+        # Store the insight in the database
+        self.insights_db.store_insight(insight)
+
+        # Get recent insights for trend analysis
+        recent_insights = self.insights_db.get_recent_insights(days=30)
+
+        # Convert insights to evaluation results for trend analysis
+        # This is a simplified approach - in a real implementation,
+        # we'd have actual evaluation results
+        if len(recent_insights) >= 3:
+            print(
+                f"Updating trend analysis with {len(recent_insights)} recent insights"
+            )
+            # TODO: Implement full trend analysis with actual evaluation results
+        else:
+            print(
+                f"Collecting more insights for trend analysis (current: {len(recent_insights)})"
+            )
         pass
 
     def _generate_recommendations(
