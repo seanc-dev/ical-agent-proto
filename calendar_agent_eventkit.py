@@ -14,6 +14,14 @@ try:
 except ImportError:
     CORE_MEMORY_AVAILABLE = False
 
+# Import Narrative memory system
+try:
+    from core.narrative_memory import NarrativeMemory
+
+    NARRATIVE_MEMORY_AVAILABLE = True
+except ImportError:
+    NARRATIVE_MEMORY_AVAILABLE = False
+
 # Attempt real PyObjC integration unless running under pytest
 try:
     if "pytest" in sys.modules:
@@ -188,6 +196,14 @@ class EventKitAgent:
             except Exception as e:
                 print(f"Warning: Could not initialize Core memory: {e}")
 
+        # Initialize Narrative memory system
+        self.narrative_memory = None
+        if NARRATIVE_MEMORY_AVAILABLE:
+            try:
+                self.narrative_memory = NarrativeMemory()
+            except Exception as e:
+                print(f"Warning: Could not initialize Narrative memory: {e}")
+
     def _request_access(self, entity_type):
         """Request access and block until granted."""
         self._granted = False
@@ -358,6 +374,7 @@ class EventKitAgent:
             datetime.strptime(details["time"], "%H:%M")
         except Exception as e:
             return {"success": False, "error": f"Invalid time format: {e}"}
+
         # Build and configure event
         event = EKEvent.eventWithEventStore_(self.store)
         event.setTitle_(details["title"])
@@ -394,7 +411,7 @@ class EventKitAgent:
                     "recurrence_rule": details["recurrence_rule"],
                 }
             )
-            return {"success": True, "message": "Event created successfully"}
+            # Don't return early - continue to narrative memory processing
         # Save to EventKit for one-off events
         try:
             success = self.store.saveEvent_span_error_(event, EKSpanThisEvent, None)
@@ -421,7 +438,222 @@ class EventKitAgent:
             except Exception as e:
                 print(f"Warning: Could not add event to Core memory: {e}")
 
+        # Add to Narrative memory system
+        if self.narrative_memory:
+            try:
+                # Extract tags from event details
+                tags = []
+                if details.get("description"):
+                    # Simple tag extraction based on common keywords
+                    description_lower = details["description"].lower()
+                    if any(
+                        word in description_lower
+                        for word in ["work", "meeting", "team", "project"]
+                    ):
+                        tags.append("work")
+                    if any(
+                        word in description_lower
+                        for word in [
+                            "gym",
+                            "workout",
+                            "fitness",
+                            "exercise",
+                            "training",
+                        ]
+                    ):
+                        tags.append("health")
+                    if any(
+                        word in description_lower
+                        for word in ["dinner", "lunch", "coffee", "social"]
+                    ):
+                        tags.append("social")
+                    if any(
+                        word in description_lower
+                        for word in ["travel", "trip", "vacation"]
+                    ):
+                        tags.append("travel")
+
+                # Create event data for narrative analysis
+                narrative_event = {
+                    "title": details["title"],
+                    "description": details.get("description", ""),
+                    "date": details["date"],
+                    "time": details["time"],
+                    "tags": tags,
+                }
+
+                # For immediate theme creation, create a simple theme if tags are present
+                if tags:
+                    # Create a theme based on the first tag
+                    primary_tag = tags[0]
+                    theme_topic = f"{primary_tag.title()} Activities"
+                    theme_summary = (
+                        f"User has events related to {primary_tag}: {details['title']}"
+                    )
+
+                    # Check if this theme already exists
+                    existing_themes = self.narrative_memory.search_themes(
+                        topic=theme_topic
+                    )
+                    if not existing_themes:
+                        # Create new theme
+                        self.narrative_memory.add_theme(
+                            topic=theme_topic,
+                            summary=theme_summary,
+                            source_refs=[f"event_{details['title']}"],
+                            confidence=0.6,
+                            tags=tags,
+                        )
+                    else:
+                        # Update existing theme
+                        existing_theme = existing_themes[0]
+                        updated_summary = (
+                            f"{existing_theme.summary}, {details['title']}"
+                        )
+                        # Find the theme ID by topic
+                        theme_id = None
+                        for tid, theme in self.narrative_memory.themes.items():
+                            if theme.topic == existing_theme.topic:
+                                theme_id = tid
+                                break
+
+                        if theme_id:
+                            self.narrative_memory.update_theme(
+                                theme_id,
+                                summary=updated_summary,
+                                confidence=min(0.9, existing_theme.confidence + 0.1),
+                            )
+
+                # Create patterns directly for recurring events
+                if "recurrence_rule" in details:
+                    # Create a pattern based on the event title and recurrence
+                    pattern_title = details["title"]
+                    pattern_recurrence = details["recurrence_rule"]
+
+                    # Check if this pattern already exists
+                    existing_patterns = self.narrative_memory.search_patterns(
+                        pattern=pattern_title
+                    )
+                    if not existing_patterns:
+                        # Create new pattern
+                        pattern_id = self.narrative_memory.add_pattern(
+                            pattern=pattern_title,
+                            datetime_str=details["time"],
+                            recurrence=pattern_recurrence,
+                            confidence=0.7,
+                            context=f"Recurring {pattern_recurrence} event",
+                        )
+                    else:
+                        # Update existing pattern confidence
+                        existing_pattern = existing_patterns[0]
+                        # Find the pattern ID
+                        pattern_id = None
+                        for pid, pattern in self.narrative_memory.patterns.items():
+                            if pattern.pattern == existing_pattern.pattern:
+                                pattern_id = pid
+                                break
+
+                        if pattern_id:
+                            self.narrative_memory.update_pattern(
+                                pattern_id,
+                                confidence=min(0.9, existing_pattern.confidence + 0.1),
+                                last_seen=datetime.now().strftime("%Y-%m-%d"),
+                            )
+
+            except Exception as e:
+                print(f"Warning: Could not add event to Narrative memory: {e}")
+
         return {"success": True, "message": "Event created successfully"}
+
+    def get_narrative_insights(self, query=None):
+        """Get narrative memory insights and themes."""
+        if not self.narrative_memory:
+            return {"themes": [], "patterns": [], "insights": []}
+
+        try:
+            insights = {"themes": [], "patterns": [], "insights": []}
+
+            # Get all themes
+            for theme in self.narrative_memory.themes.values():
+                insights["themes"].append(
+                    {
+                        "topic": theme.topic,
+                        "summary": theme.summary,
+                        "confidence": theme.confidence,
+                        "tags": theme.tags,
+                        "last_updated": theme.last_updated,
+                    }
+                )
+
+            # Get all patterns
+            for pattern in self.narrative_memory.patterns.values():
+                insights["patterns"].append(
+                    {
+                        "pattern": pattern.pattern,
+                        "datetime": pattern.datetime,
+                        "recurrence": pattern.recurrence,
+                        "confidence": pattern.confidence,
+                        "context": pattern.context,
+                        "last_seen": pattern.last_seen,
+                    }
+                )
+
+            # Generate insights based on themes and patterns
+            if insights["themes"]:
+                # Find most confident themes
+                high_confidence_themes = [
+                    t for t in insights["themes"] if t["confidence"] >= 0.7
+                ]
+                if high_confidence_themes:
+                    insights["insights"].append(
+                        {
+                            "type": "high_confidence_theme",
+                            "content": f"User has strong patterns in: {', '.join([t['topic'] for t in high_confidence_themes])}",
+                        }
+                    )
+
+            if insights["patterns"]:
+                # Find recurring patterns
+                daily_patterns = [
+                    p for p in insights["patterns"] if p["recurrence"] == "daily"
+                ]
+                if daily_patterns:
+                    insights["insights"].append(
+                        {
+                            "type": "daily_pattern",
+                            "content": f"User has {len(daily_patterns)} daily routines",
+                        }
+                    )
+
+            return insights
+
+        except Exception as e:
+            print(f"Warning: Could not get narrative insights: {e}")
+            return {"themes": [], "patterns": [], "insights": []}
+
+    def search_narrative_themes(self, query):
+        """Search narrative themes by query."""
+        if not self.narrative_memory:
+            return []
+
+        try:
+            return self.narrative_memory.search_themes(content=query)
+        except Exception as e:
+            print(f"Warning: Could not search narrative themes: {e}")
+            return []
+
+    def get_narrative_stats(self):
+        """Get narrative memory statistics."""
+        if not self.narrative_memory:
+            return {"narrative_memory_available": False}
+
+        try:
+            stats = self.narrative_memory.get_stats()
+            stats["narrative_memory_available"] = True
+            return stats
+        except Exception as e:
+            print(f"Warning: Could not get narrative stats: {e}")
+            return {"narrative_memory_available": False}
 
     def delete_event(self, details):
         """Delete an event via EventKit."""
