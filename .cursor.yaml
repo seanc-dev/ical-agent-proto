@@ -16,4 +16,5 @@ auto_run:
     - git reset --hard *
     - git clean *
     - sudo *
-    - docker *
+    - ^docker\s+(?!build\b).*$  
+    - ^docker-compose\s+(?!(?:up|down)\b).*$

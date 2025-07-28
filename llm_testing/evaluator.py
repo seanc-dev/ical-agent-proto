@@ -258,9 +258,8 @@ Respond in JSON format:
 
     def _route_to_model(self, difficulty: str, scores: Dict[str, float]) -> str:
         """Route evaluation to appropriate model based on difficulty and scores."""
-        if (
-            difficulty == "easy"
-            or max(scores.values()) > self.config.low_stakes_threshold
+        if difficulty == "easy" or (
+            scores and max(scores.values()) > self.config.low_stakes_threshold
         ):
             return self.fallback_model
         else:
