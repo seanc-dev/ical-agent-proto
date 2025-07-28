@@ -29,8 +29,8 @@ class EvaluationLoop:
         results = []
 
         for prompt in scenario.test_prompts:
-            # TODO: Actually call the assistant
-            assistant_response = f"Placeholder response for: {prompt.prompt}"
+            # Call the actual assistant
+            assistant_response = self._call_assistant(prompt.prompt, scenario)
 
             # Evaluate the response
             evaluation = self.scorer.evaluate_response(
@@ -149,10 +149,57 @@ class EvaluationLoop:
             alerts=alerts,
         )
 
+    def _call_assistant(self, prompt: str, scenario: Scenario) -> str:
+        """Call the actual assistant with the given prompt."""
+        try:
+            # Import the assistant function from openai_client
+            from openai_client import interpret_command
+
+            # Call the assistant with the prompt
+            response = interpret_command(prompt)
+
+            # Extract the response text from the function call result
+            if isinstance(response, dict) and "response" in response:
+                return response["response"]
+            elif isinstance(response, str):
+                return response
+            else:
+                return str(response)
+
+        except Exception as e:
+            print(f"Assistant call failed: {e}")
+            return f"Error calling assistant: {e}"
+
     def _generate_insights(self, scenario_results: List[ScenarioResult]) -> List[str]:
         """Generate insights from scenario results."""
-        # TODO: Implement actual insight generation
-        return ["Placeholder insight 1", "Placeholder insight 2"]
+        insights = []
+
+        for result in scenario_results:
+            # Analyze performance patterns
+            if result.average_score < 3.0:
+                insights.append(
+                    f"Low performance in {result.scenario.name} (avg: {result.average_score:.2f})"
+                )
+            elif result.average_score > 4.5:
+                insights.append(
+                    f"Excellent performance in {result.scenario.name} (avg: {result.average_score:.2f})"
+                )
+
+            # Analyze success rate
+            if result.success_rate < 0.5:
+                insights.append(
+                    f"Low success rate in {result.scenario.name} ({result.success_rate:.1%})"
+                )
+
+            # Analyze persona-specific patterns
+            persona = result.scenario.persona.name
+            if persona in ["Morgan", "Riley"]:  # Accessibility personas
+                if result.average_score < 3.5:
+                    insights.append(
+                        f"Accessibility support needs improvement for {persona}"
+                    )
+
+        return insights if insights else ["No significant insights from this batch"]
 
     def _check_alerts(self, summary: Dict[str, Any]) -> List[str]:
         """Check for performance alerts."""
@@ -170,14 +217,118 @@ class EvaluationLoop:
 
     def _analyze_trends(self, results: BatchResult) -> Dict[str, Any]:
         """Analyze trends in the results."""
-        # TODO: Implement trend analysis
+        if not results.results:
+            return {
+                "trend": "no_data",
+                "improvement_rate": 0.0,
+                "regression_detected": False,
+            }
+
+        # Calculate average scores by category
+        category_scores = {}
+        persona_scores = {}
+
+        for result in results.results:
+            # Group by scenario category
+            scenario = next(
+                (s for s in results.scenarios if s.name == result.scenario_name), None
+            )
+            if scenario:
+                category = scenario.category
+                if category not in category_scores:
+                    category_scores[category] = []
+                category_scores[category].append(max(result.scores.values()))
+
+            # Group by persona
+            persona = result.persona_name
+            if persona not in persona_scores:
+                persona_scores[persona] = []
+            persona_scores[persona].append(max(result.scores.values()))
+
+        # Calculate trends
+        overall_avg = sum(max(r.scores.values()) for r in results.results) / len(
+            results.results
+        )
+
+        # Identify weak areas
+        weak_categories = [
+            cat
+            for cat, scores in category_scores.items()
+            if sum(scores) / len(scores) < 3.5
+        ]
+
+        weak_personas = [
+            persona
+            for persona, scores in persona_scores.items()
+            if sum(scores) / len(scores) < 3.5
+        ]
+
         return {
-            "trend": "stable",
-            "improvement_rate": 0.0,
-            "regression_detected": False,
+            "trend": "stable" if overall_avg >= 3.5 else "declining",
+            "improvement_rate": 0.0,  # Would need historical data for this
+            "regression_detected": len(weak_categories) > 0 or len(weak_personas) > 0,
+            "overall_average": overall_avg,
+            "weak_categories": weak_categories,
+            "weak_personas": weak_personas,
+            "category_averages": {
+                cat: sum(scores) / len(scores)
+                for cat, scores in category_scores.items()
+            },
+            "persona_averages": {
+                persona: sum(scores) / len(scores)
+                for persona, scores in persona_scores.items()
+            },
         }
 
     def _generate_recommendations(self, results: BatchResult) -> List[str]:
         """Generate recommendations based on results."""
-        # TODO: Implement recommendation generation
-        return ["Placeholder recommendation 1", "Placeholder recommendation 2"]
+        recommendations = []
+
+        if not results.results:
+            return ["No recommendations - no data available"]
+
+        # Analyze trends
+        trends = self._analyze_trends(results)
+
+        # Generate recommendations based on weak areas
+        if trends["weak_categories"]:
+            for category in trends["weak_categories"]:
+                recommendations.append(f"Improve performance in {category} scenarios")
+
+        if trends["weak_personas"]:
+            for persona in trends["weak_personas"]:
+                recommendations.append(f"Enhance support for {persona} persona")
+
+        # Check for accessibility issues
+        accessibility_personas = ["Morgan", "Riley"]
+        for persona in accessibility_personas:
+            if persona in trends["persona_averages"]:
+                avg_score = trends["persona_averages"][persona]
+                if avg_score < 3.5:
+                    recommendations.append(
+                        f"Improve accessibility support (current avg: {avg_score:.2f})"
+                    )
+
+        # Check for overall performance
+        if trends["overall_average"] < 3.5:
+            recommendations.append("Overall performance needs improvement")
+        elif trends["overall_average"] > 4.5:
+            recommendations.append(
+                "Excellent performance - consider expanding test scenarios"
+            )
+
+        # Check for consistency issues
+        scores = [max(r.scores.values()) for r in results.results]
+        score_variance = sum(
+            (s - trends["overall_average"]) ** 2 for s in scores
+        ) / len(scores)
+        if score_variance > 1.0:
+            recommendations.append(
+                "High score variance - improve consistency across scenarios"
+            )
+
+        return (
+            recommendations
+            if recommendations
+            else ["Continue current approach - performance is good"]
+        )
