@@ -1,0 +1,38 @@
+{
+  "themes": {
+    "theme_4f010fcc": {
+      "topic": "High Confidence Theme",
+      "summary": "High confidence theme",
+      "last_updated": "2025-07-28",
+      "source_refs": [],
+      "confidence": 0.9,
+      "tags": []
+    },
+    "theme_afc7a343": {
+      "topic": "Medium Confidence Theme",
+      "summary": "Medium confidence theme",
+      "last_updated": "2025-07-28",
+      "source_refs": [],
+      "confidence": 0.6,
+      "tags": []
+    }
+  },
+  "patterns": {
+    "pattern_b5e44145": {
+      "pattern": "Daily Pattern",
+      "datetime": "9:00am",
+      "recurrence": "daily",
+      "last_seen": "2025-07-28",
+      "confidence": 0.5,
+      "context": ""
+    },
+    "pattern_ef4ee160": {
+      "pattern": "Weekly Pattern",
+      "datetime": "5:00pm",
+      "recurrence": "weekly",
+      "last_seen": "2025-07-28",
+      "confidence": 0.5,
+      "context": ""
+    }
+  }
+}
