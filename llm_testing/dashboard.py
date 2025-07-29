@@ -6,6 +6,7 @@ from typing import List, Dict, Any, Optional
 from dataclasses import asdict
 from .database import ResultsDatabase
 from .types import BatchResult, EvaluationReport
+from .notifications import NotificationManager, create_notification_config_from_dict
 
 
 class Dashboard:
@@ -244,6 +245,10 @@ class AlertSystem:
         self.notification_config = notification_config or {}
         self.alert_history = []
 
+        # Initialize notification manager
+        config = create_notification_config_from_dict(self.notification_config)
+        self.notification_manager = NotificationManager(config)
+
     def check_alerts(self) -> List[Dict[str, Any]]:
         """Check for new alerts and return them."""
         alert_summary = self.dashboard.get_alert_summary()
@@ -263,9 +268,19 @@ class AlertSystem:
 
     def send_notification(self, alert: Dict[str, Any]):
         """Send notification for an alert."""
-        # TODO: Implement actual notification sending
-        # This could be email, Slack, webhook, etc.
-        print(f"ALERT: {alert['severity'].upper()} - {alert['message']}")
+        # Send through notification manager
+        results = self.notification_manager.send_notification(alert)
+
+        # Log results
+        for provider, success in results.items():
+            if success:
+                print(f"✅ {provider.capitalize()} notification sent successfully")
+            else:
+                print(f"❌ Failed to send {provider} notification")
+
+        # Fallback to console if no providers configured
+        if not any(results.values()):
+            print(f"ALERT: {alert['severity'].upper()} - {alert['message']}")
 
     def process_alerts(self):
         """Process all new alerts."""
