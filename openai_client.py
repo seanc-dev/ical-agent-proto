@@ -149,13 +149,37 @@ calendar_functions = [
 ]
 
 
-def interpret_command(user_input, conversation_context=""):
+def interpret_command(
+    user_input: str, conversation_context: str = ""
+) -> Dict[str, Any]:
     """
-    Use GPT-4o function calling to interpret the user's natural language command and return a dict with action and details.
+    Use GPT-4o function calling to interpret the user's natural language command.
+
+    This function takes natural language input and uses GPT-4o with function calling
+    to parse it into structured actions. It handles edge cases like misspellings,
+    poor grammar, and ambiguous requests gracefully.
 
     Args:
-        user_input: The user's input text
-        conversation_context: Optional conversation context from previous turns
+        user_input: The user's natural language input (e.g., "schedule team meeting tomorrow")
+        conversation_context: Optional conversation context from previous turns for reference resolution
+
+    Returns:
+        Dict containing:
+            - action: The parsed action (e.g., "create_event", "delete_event")
+            - details: Dict with action-specific parameters
+
+    Raises:
+        Exception: If OpenAI API is unavailable or returns an error
+
+    Examples:
+        >>> interpret_command("schedule team meeting tomorrow at 2pm")
+        {'action': 'create_event', 'details': {'title': 'team meeting', 'date': 'tomorrow', 'time': '14:00'}}
+
+        >>> interpret_command("delete that meeting")
+        {'action': 'delete_event', 'details': {'title': 'meeting'}}
+
+        >>> interpret_command("shedule meeting")  # Handles misspellings
+        {'action': 'create_event', 'details': {'title': 'meeting'}}
     """
     # If no OpenAI client (e.g. missing API key), return error
     if not client:
