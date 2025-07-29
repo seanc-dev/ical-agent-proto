@@ -530,6 +530,108 @@ class Insight:
 - [ ] Roadmap for V2 enhancements
 - [ ] Dashboard with key metrics
 
+## Continuous Testing Integration Strategy
+
+### Feature-Driven Testing Expansion
+
+As we build new features, we should continuously expand our LLM testing coverage to ensure comprehensive evaluation of the assistant's capabilities.
+
+#### **Integration Points for New Features**
+
+**Core Memory & Narrative Memory**
+
+- Test how well the assistant leverages historical context
+- Evaluate pattern recognition and theme identification
+- Assess memory retrieval accuracy and relevance
+- Test memory-based personalization capabilities
+
+**Conversation Management**
+
+- Multi-turn conversation handling
+- Context preservation across turns
+- Reference resolution ("move it", "that meeting")
+- Conversation state management
+
+**EventKit Integration**
+
+- Real calendar operation testing
+- Event creation, modification, deletion
+- Recurring event handling
+- Calendar conflict resolution
+- Timezone handling
+
+**Edge Case Handling**
+
+- Input normalization and validation
+- Error recovery and graceful degradation
+- Ambiguous request clarification
+- Invalid input handling
+
+**Accessibility Features**
+
+- Screen reader compatibility
+- Keyboard navigation support
+- Voice command processing
+- Alternative input methods
+
+#### **Testing Integration Workflow**
+
+1. **Feature Development Phase**
+
+   - Identify new capabilities being added
+   - Design test scenarios that exercise new features
+   - Create personas that would benefit from new features
+   - Define success criteria for new functionality
+
+2. **Test Scenario Creation**
+
+   - Add new scenarios to `llm_testing/scenarios.py`
+   - Create personas that test new feature boundaries
+   - Define ground-truth responses for new capabilities
+   - Update scoring rubrics to include new criteria
+
+3. **Integration Testing**
+
+   - Test new features with existing personas
+   - Verify backward compatibility
+   - Ensure no regressions in existing functionality
+   - Validate performance impact
+
+4. **Continuous Monitoring**
+   - Track performance of new features over time
+   - Identify areas for improvement
+   - Generate insights for feature refinement
+   - Create issues for problematic areas
+
+#### **Example: Adding Calendar Sharing Feature**
+
+**New Test Scenarios:**
+
+- "Share calendar with team member"
+- "Collaborative scheduling with external users"
+- "Permission management and access control"
+- "Cross-platform calendar synchronization"
+
+**New Personas:**
+
+- **Team Lead**: Manages team calendar access
+- **External Collaborator**: Needs limited calendar access
+- **Administrator**: Manages calendar permissions
+
+**New Evaluation Criteria:**
+
+- Permission handling accuracy
+- Security awareness
+- Collaboration facilitation
+- Cross-platform compatibility
+
+#### **Automated Integration**
+
+- **PR Testing**: Run relevant test scenarios on every PR
+- **Feature Flags**: Test new features before full deployment
+- **A/B Testing**: Compare different feature implementations
+- **Performance Monitoring**: Track impact on overall assistant performance
+
 ## Future Enhancements (V2+)
 
 ### Advanced Capabilities
