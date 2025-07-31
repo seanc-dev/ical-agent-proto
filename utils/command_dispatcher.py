@@ -8,15 +8,22 @@ from calendar_agent_eventkit import (
     move_event,
     add_notification,
 )
-from utils.cli_output import format_events, format_reminders, print_events_and_reminders
+from utils.cli_output import (
+    format_events,
+    format_reminders,
+    print_events_and_reminders,
+    format_error_message,
+    format_success_message,
+)
 
 
 def handle_list_todays_events(details):
+    """Handle listing today's events and reminders."""
     result = list_events_and_reminders(
         details.get("start_date"), details.get("end_date")
     )
     if result.get("error"):
-        print(f"❌ Error: {result['error']}")
+        print(format_error_message(result["error"]))
         return
     print_events_and_reminders(result.get("events", []), result.get("reminders", []))
 
@@ -27,26 +34,29 @@ def handle_list_all(details):
 
 
 def handle_list_events_only(details):
+    """Handle listing only events."""
     result = list_events_and_reminders(
         details.get("start_date"), details.get("end_date")
     )
     if result.get("error"):
-        print(f"❌ Error: {result['error']}")
+        print(format_error_message(result["error"]))
         return
     print(format_events(result.get("events", [])))
 
 
 def handle_list_reminders_only(details):
+    """Handle listing only reminders."""
     result = list_events_and_reminders(
         details.get("start_date"), details.get("end_date")
     )
     if result.get("error"):
-        print(f"❌ Error: {result['error']}")
+        print(format_error_message(result["error"]))
         return
     print(format_reminders(result.get("reminders", [])))
 
 
 def handle_create_event(details):
+    """Handle creating a new event."""
     # Prompt for duration if not provided
     if "duration" not in details or details.get("duration") is None:
         resp = input(
@@ -67,33 +77,36 @@ def handle_create_event(details):
             details["duration"] = 60
     result = create_event(details)
     if result.get("success"):
-        print(f"✅ {result.get('message')}")
+        print(format_success_message(result.get("message")))
     else:
-        print(f"❌ Error: {result.get('error')}")
+        print(format_error_message(result.get("error")))
 
 
 def handle_delete_event(details):
+    """Handle deleting an event."""
     result = delete_event(details)
     if result.get("success"):
-        print(f"✅ {result.get('message')}")
+        print(format_success_message(result.get("message")))
     else:
-        print(f"❌ Error: {result.get('error')}")
+        print(format_error_message(result.get("error")))
 
 
 def handle_move_event(details):
+    """Handle moving/rescheduling an event."""
     result = move_event(details)
     if result.get("success"):
-        print(f"✅ {result.get('message')}")
+        print(format_success_message(result.get("message")))
     else:
-        print(f"❌ Error: {result.get('error')}")
+        print(format_error_message(result.get("error")))
 
 
 def handle_add_notification(details):
+    """Handle adding a notification to an event."""
     result = add_notification(details)
     if result.get("success"):
-        print(f"✅ {result.get('message')}")
+        print(format_success_message(result.get("message")))
     else:
-        print(f"❌ Error: {result.get('error')}")
+        print(format_error_message(result.get("error")))
 
 
 # Map actions to handlers

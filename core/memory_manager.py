@@ -147,16 +147,36 @@ class CoreMemory:
         except Exception as e:
             print(f"Warning: Could not save memories: {e}")
 
-    def recall(self, query: str, context: Dict = None) -> List[Dict]:
+    def recall(
+        self, query: str, context: Dict[str, Any] = None
+    ) -> List[Dict[str, Any]]:
         """
-        Semantic search for similar past events.
+        Semantic search for similar past events using embeddings.
+
+        This function performs semantic search through stored calendar events
+        to find events similar to the query. It uses the embedding manager
+        to find the most relevant past events based on semantic similarity.
 
         Args:
-            query: Search query
-            context: Additional context for the search
+            query: Natural language search query (e.g., "my usual Tuesday meeting")
+            context: Additional context for the search (optional)
 
         Returns:
-            List of similar events with metadata
+            List of dictionaries containing similar events with metadata:
+                - title: Event title
+                - description: Event description
+                - date: Event date
+                - duration: Event duration in minutes
+                - attendees: List of attendees
+                - location: Event location
+                - similarity_score: Semantic similarity score
+
+        Examples:
+            >>> memory.recall("team meeting")
+            [{'title': 'Team Standup', 'date': '2024-01-15', 'similarity_score': 0.85}]
+
+            >>> memory.recall("my usual Tuesday check-in")
+            [{'title': 'Weekly Check-in with Boss', 'date': '2024-01-16', 'similarity_score': 0.92}]
         """
         # Search for similar events using embedding manager
         similar_events = self.embedding_manager.search_similar(query, top_k=5)
